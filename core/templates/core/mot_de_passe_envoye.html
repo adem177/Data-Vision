@@ -1,0 +1,38 @@
+{% extends "core/base.html" %}
+
+{% block titre %}DataVision — Vérifie ta boîte mail{% endblock %}
+
+{% block entete %}{% endblock %}
+
+{% block contenu %}
+<main class="auth-scene" id="contenu-principal">
+
+  <section class="auth-formulaire">
+    <a class="auth-logo" href="{% url 'core:index' %}">
+      <span class="auth-pastille" aria-hidden="true"><i class="bi bi-bar-chart-fill"></i></span> DataVision
+    </a>
+
+    <div class="auth-centre">
+      <h1 class="auth-titre"><i class="bi bi-envelope-paper" aria-hidden="true"></i> Vérifie ta boîte mail</h1>
+      <p class="auth-chapo">Si un compte existe pour cette adresse, un lien de réinitialisation vient de t'être envoyé. Pense aussi à vérifier tes spams.</p>
+
+      <div class="encart-demo">
+        <strong><i class="bi bi-lightbulb" aria-hidden="true"></i> Et ensuite ?</strong>
+        <p>Ouvre le lien reçu par e-mail pour choisir ton nouveau mot de passe. Il n'est utilisable qu'une seule fois.</p>
+      </div>
+
+      <p class="lien-bas">
+        <a href="{% url 'core:connexion' %}">← Retour à la connexion</a>
+      </p>
+    </div>
+
+    <p class="auth-pied">
+      <span>Copyright © 2026 DataVision</span>
+      <span>Analyse de données simplifiée</span>
+    </p>
+  </section>
+
+  {% include "core/vitrine_auth.html" with page="connexion" %}
+
+</main>
+{% endblock %}

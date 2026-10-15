@@ -1,0 +1,64 @@
+# Configuration du déploiement sur Render (https://render.com)
+#
+# Ce fichier (« blueprint ») décrit comment déployer DataVision :
+# - une application web qui exécute Django via gunicorn
+# - une base de données PostgreSQL gérée par Render
+#
+# Pour l'utiliser : connecte ton repo GitHub à Render, Render détecte
+# ce fichier et crée les ressources automatiquement.
+
+services:
+  - type: web
+    name: datavision
+    runtime: python
+    # Branche déployée automatiquement à chaque push.
+    buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate
+    # gunicorn sert l'application Django (module datavision.wsgi).
+    startCommand: gunicorn datavision.wsgi:application
+    # Render interroge cette route en continu : si elle cesse de répondre
+    # (notamment 503 quand la base est injoignable), l'instance est marquée
+    # défaillante et un déploiement qui ne démarre pas est refusé.
+    # Sans cette ligne, un /health qui renverrait 500 passerait inaperçu.
+    healthCheckPath: /health
+    envVars:
+      - key: DJANGO_DEBUG
+        value: "False"
+      - key: DJANGO_SECRET_KEY
+        generateValue: true          # Render génère une clé secrète aléatoire
+      - key: DJANGO_ALLOWED_HOSTS
+        sync: false                  # à renseigner avec ton domaine après création
+      - key: PYTHON_VERSION
+        value: "3.12.0"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: datavision-db
+          property: connectionString
+      # --- Phase D : fiabilité gros fichiers ---
+      # Nombre de lignes analysées au maximum (protection mémoire).
+      - key: DATAVISION_MAX_ROWS
+        value: "500000"
+      # Nombre de lignes au-delà duquel un analyseur n'est plus mis en cache
+      # (au-delà, la sérialisation du dataframe coûterait plus cher que la
+      # relecture du fichier). « 0 » désactive la limite.
+      - key: DATAVISION_CACHE_MAX_ROWS
+        value: "200000"
+      # Taille maximale d'un fichier importé, en mégaoctets.
+      - key: DATAVISION_MAX_UPLOAD_MB
+        value: "100"
+      # Identifiants du compte de démonstration (python manage.py creer_demo).
+      # En production, on les MASQUE : afficher « demo / DataVision2026 » sur la
+      # page de connexion revient à publier un compte d'accès. Passer à "True"
+      # uniquement sur un environnement de démonstration publique.
+      - key: DATAVISION_DEMO_LOGIN
+        value: "False"
+      # Cache partagé entre les workers gunicorn.
+      # Laisser vide = cache local (correct avec un seul worker).
+      # Pour du multi-worker : ajouter un add-on Redis sur Render puis
+      # renseigner cette valeur avec l'URL fournie (redis://...).
+      - key: REDIS_URL
+        sync: false
+
+databases:
+  - name: datavision-db
+    plan: free
+    databaseName: datavision

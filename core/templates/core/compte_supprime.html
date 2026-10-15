@@ -1,0 +1,33 @@
+{% extends "core/base.html" %}
+
+{% block titre %}DataVision — Compte supprimé{% endblock %}
+
+{% block description %}Ton compte DataVision et tes analyses ont été supprimés.{% endblock %}
+
+{% block entete %}{% endblock %}
+
+{% block contenu %}
+<main class="auth-scene" id="contenu-principal">
+
+  <section class="auth-formulaire">
+    <a class="auth-logo" href="{% url 'core:index' %}">
+      <span class="auth-pastille" aria-hidden="true"><i class="bi bi-bar-chart-fill"></i></span> DataVision
+    </a>
+
+    <div class="auth-centre">
+      <h1 class="auth-titre"><i class="bi bi-check2-circle" aria-hidden="true"></i> Compte supprimé</h1>
+      <p class="auth-chapo">Ton compte, tes analyses et leurs fichiers ont été supprimés définitivement. Merci d'avoir utilisé DataVision.</p>
+
+      <div class="encart-demo">
+        <strong><i class="bi bi-lightbulb" aria-hidden="true"></i> De retour ?</strong>
+        <p>Crée un nouveau compte en quelques secondes pour repartir de zéro.</p>
+      </div>
+
+      <p class="lien-bas">
+        <a href="{% url 'core:inscription' %}">Créer un compte →</a>
+        <a href="{% url 'core:connexion' %}">Se connecter</a>
+      </p>
+    </div>
+  </section>
+</main>
+{% endblock %}

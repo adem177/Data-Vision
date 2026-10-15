@@ -1,0 +1,70 @@
+<section class="carte">
+  <h2 class="titre-section">Analyses chargées depuis l'API</h2>
+
+  @if (chargement()) {
+    <p class="aide">Chargement de <code>/api/projets</code>…</p>
+  } @else {
+    @if (erreur()) {
+      <div class="alerte alerte-erreur">
+        <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i> {{ erreur() }}
+      </div>
+    }
+
+    @if (projets().length === 0) {
+      <p class="aide">Aucune analyse sauvegardée — importe un fichier depuis la page d'accueil.</p>
+    } @else {
+      <div class="poc-selecteur">
+        <label>Analyse affichée
+          <select (change)="selectionner($event)">
+            @for (projet of projets(); track projet.id) {
+              <option [value]="projet.id">{{ projet.nom }}</option>
+            }
+          </select>
+        </label>
+        <span class="badge">{{ projets().length }} analyse(s)</span>
+        @if (chargementDonnees()) {
+          <span class="aide">chargement…</span>
+        }
+      </div>
+      <p class="aide">
+        Angular a appelé <code>/api/projets</code> puis <code>/api/donnees?id=…</code>
+        pour <strong>{{ analyseActive() }}</strong> : cette zone n'a pas été rendue par Django.
+      </p>
+    }
+  }
+</section>
+
+@if (kpis()['ca_total'] !== undefined || kpis()['nb_ventes'] !== undefined) {
+  <section class="kpis">
+    <div class="carte kpi">
+      <span class="kpi-valeur">{{ formatNombre(kpis()['ca_total']) }}</span>
+      <span class="kpi-libelle">Chiffre d'affaires</span>
+    </div>
+    <div class="carte kpi">
+      <span class="kpi-valeur">{{ formatNombre(kpis()['nb_ventes']) }}</span>
+      <span class="kpi-libelle">Nombre de ventes</span>
+    </div>
+    <div class="carte kpi">
+      <span class="kpi-valeur">{{ formatNombre(kpis()['panier_moyen']) }}</span>
+      <span class="kpi-libelle">Panier moyen</span>
+    </div>
+    <div class="carte kpi">
+      <span class="kpi-valeur">{{ formatNombre(kpis()['produits_vendus']) }}</span>
+      <span class="kpi-libelle">Produits vendus</span>
+    </div>
+  </section>
+}
+
+@if (mois().length) {
+  <section class="carte">
+    <h3>Évolution mensuelle — graphique CSS (sans Chart.js)</h3>
+    <div class="poc-barres">
+      @for (moi of mois(); track moi; let i = $index) {
+        <div class="poc-barre" [title]="moi + ' : ' + formatNombre(caMensuel()[i])">
+          <span class="poc-colonne" [style.height.%]="hauteur(caMensuel()[i])"></span>
+          <small>{{ mois()[i] }}</small>
+        </div>
+      }
+    </div>
+  </section>
+}

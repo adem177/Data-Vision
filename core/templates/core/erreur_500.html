@@ -1,0 +1,23 @@
+{% extends "core/base.html" %}
+
+{% block titre %}DataVision — Erreur serveur{% endblock %}
+
+{% block description %}Une erreur inattendue est survenue côté serveur.{% endblock %}
+
+{% block contenu %}
+<main class="conteneur" id="contenu-principal">
+  <section class="carte carte-vide">
+    <p class="zone-icone"><i class="bi bi-exclamation-octagon" aria-hidden="true"></i></p>
+    <h3>Erreur serveur <span class="badge">erreur 500</span></h3>
+    <p class="aide">
+      Une erreur inattendue est survenue. Ta demande n'a rien perdu : le fichier importé
+      et l'analyse restent enregistrés.
+    </p>
+    <p class="aide">Réessaie dans un instant ; si le problème revient, reviens plus tard.</p>
+    <div class="actions-center">
+      <a class="btn btn-principal" href="{% url 'core:projets' %}">Mes analyses</a>
+      <a class="btn btn-fantome" href="{% url 'core:index' %}">Retour à l'accueil</a>
+    </div>
+  </section>
+</main>
+{% endblock %}

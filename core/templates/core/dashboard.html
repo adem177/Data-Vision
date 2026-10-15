@@ -1,0 +1,253 @@
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block titre %}DataVision — {{ projet.nom }}{% endblock %}
+
+{% block contenu %}
+<main class="conteneur" id="contenu-principal">
+  <section class="entete-analyse">
+    <div>
+      <h1><i class="bi bi-file-earmark-text" aria-hidden="true"></i> {{ projet.nom }}</h1>
+      <p class="aide">{{ nom_fichier }} · importé le {{ projet.date_creation|date:"d/m/Y" }} · {{ kpis.nb_ventes }} lignes</p>
+    </div>
+    <div class="actions">
+      <a class="btn" href="{% url 'core:rapport' projet.pk %}" data-rapport data-base="{% url 'core:rapport' projet.pk %}"><i class="bi bi-file-earmark-pdf" aria-hidden="true"></i> Rapport PDF</a>
+      <a class="btn" data-export="csv" href="#"><i class="bi bi-download" aria-hidden="true"></i> Export CSV</a>
+      <a class="btn" data-export="excel" href="#"><i class="bi bi-download" aria-hidden="true"></i> Export Excel</a>
+    </div>
+  </section>
+
+  {% if kpis.tronque %}
+  <div class="alerte alerte-avertissement">
+    <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i> <strong>Fichier volumineux :</strong> seules les {{ kpis.limite_lignes|floatformat:"0" }} premières lignes
+    ont été analysées pour des raisons de mémoire. Les indicateurs sont donc partiels.
+  </div>
+  {% endif %}
+
+  {% if kpis.doublons_supprimes or kpis.valeurs_manquantes or kpis.lignes_ignorees %}
+  <div class="alerte">
+    <i class="bi bi-stars" aria-hidden="true"></i> <strong>Données nettoyées automatiquement :</strong>
+    {% if kpis.lignes_ignorees %}{{ kpis.lignes_ignorees }} ligne{{ kpis.lignes_ignorees|pluralize }} mal formée{{ kpis.lignes_ignorees|pluralize }} ignorée{{ kpis.lignes_ignorees|pluralize }}{% endif %}
+    {% if kpis.lignes_ignorees and kpis.doublons_supprimes %} · {% endif %}
+    {% if kpis.doublons_supprimes %}{{ kpis.doublons_supprimes }} doublons supprimés{% endif %}
+    {% if kpis.doublons_supprimes and kpis.valeurs_manquantes %} · {% endif %}
+    {% if kpis.valeurs_manquantes %}{{ kpis.valeurs_manquantes }} valeurs manquantes détectées{% endif %}
+  </div>
+  {% endif %}
+
+  <div class="alerte alerte-erreur" id="alerte-api" hidden>
+    <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i> Analyse inaccessible — <a href="{% url 'core:projets' %}">retour à mes analyses</a>.
+  </div>
+
+  {% if messages %}
+  {% for message in messages %}
+  <div class="alerte">{{ message }}</div>
+  {% endfor %}
+  {% endif %}
+
+  <div class="loader" id="loader" role="status" aria-live="polite" hidden>
+    <span class="loader-cercle" aria-hidden="true"></span> Chargement des données…
+  </div>
+
+  <section class="kpis">
+    <div class="carte kpi">
+      <span class="kpi-valeur" data-kpi="ca_total">…</span>
+      <span class="kpi-libelle">Chiffre d'affaires</span>
+    </div>
+    <div class="carte kpi">
+      <span class="kpi-valeur" data-kpi="nb_ventes">…</span>
+      <span class="kpi-libelle">Nombre de ventes</span>
+    </div>
+    <div class="carte kpi">
+      <span class="kpi-valeur" data-kpi="panier_moyen">…</span>
+      <span class="kpi-libelle">Panier moyen</span>
+    </div>
+    <div class="carte kpi">
+      <span class="kpi-valeur" data-kpi="produits_vendus">…</span>
+      <span class="kpi-libelle">Produits vendus</span>
+    </div>
+    <div class="carte kpi">
+      <span class="kpi-valeur" data-kpi="nb_categories">…</span>
+      <span class="kpi-libelle">Catégories</span>
+    </div>
+    <div class="carte kpi">
+      <span class="kpi-valeur" data-kpi="valeurs_manquantes">…</span>
+      <span class="kpi-libelle">Valeurs manquantes</span>
+    </div>
+  </section>
+
+  <section class="carte carte-resume" id="carte-resume" hidden>
+    <h2 class="titre-section"><i class="bi bi-stars" aria-hidden="true"></i> Synthèse automatique</h2>
+    <p class="resume-texte" id="resume-texte" role="status" aria-live="polite"></p>
+  </section>
+
+  <!-- Réflexe éditorial (Datawrapper) : ce que l'analyste en dit, et d'où
+       viennent les chiffres. Rien n'est jamais affiché seul dans le vide :
+       l'éditeur reste joignable même sans note. -->
+  <section class="carte carte-note">
+    <h2 class="titre-section"><i class="bi bi-pencil-square" aria-hidden="true"></i> Note de l'analyste</h2>
+    {% if projet.note_analyste %}
+    <p class="note-texte">{{ projet.note_analyste|linebreaksbr }}</p>
+    {% endif %}
+    {% if projet.source_donnees %}
+    <p class="note-source"><strong>Source :</strong> {{ projet.source_donnees }}</p>
+    {% endif %}
+    <details class="bloc-depliable">
+      <summary>
+        <i class="bi bi-pencil" aria-hidden="true"></i>
+        {% if projet.note_analyste or projet.source_donnees %}Modifier la note{% else %}Ajouter une note et une source{% endif %}
+      </summary>
+      <form method="post" action="{% url 'core:note' projet.pk %}">
+        {% csrf_token %}
+        <label>Note de l'analyste
+          <textarea name="note" maxlength="1000" rows="3"
+                    placeholder="Ce que révèlent ces chiffres, en deux phrases.">{{ projet.note_analyste }}</textarea>
+        </label>
+        <label>Source des données
+          <input type="text" name="source" maxlength="300"
+                 value="{{ projet.source_donnees }}"
+                 placeholder="Enquête interne, open data, fichier client…">
+        </label>
+        <button class="btn" type="submit"><i class="bi bi-check-lg" aria-hidden="true"></i> Enregistrer</button>
+      </form>
+    </details>
+  </section>
+
+  <section class="carte">
+    <h2 class="titre-section">Filtres</h2>
+    <div class="filtres-barre">
+      <label>Catégorie
+        <select id="filtre-categorie">
+          <option value="">Toutes</option>
+          {% for c in options.categories %}
+          <option value="{{ c }}">{{ c }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>Du
+        <input type="date" id="filtre-debut"
+               {% if options.plage %}value="{{ options.plage.debut }}" min="{{ options.plage.debut }}" max="{{ options.plage.fin }}"{% endif %}>
+      </label>
+      <label>Au
+        <input type="date" id="filtre-fin"
+               {% if options.plage %}value="{{ options.plage.fin }}" min="{{ options.plage.debut }}" max="{{ options.plage.fin }}"{% endif %}>
+      </label>
+      <button class="btn btn-fantome" id="btn-reset" type="button">Réinitialiser</button>
+      <a class="btn btn-fantome" href="{% url 'core:colonnes' projet.pk %}" title="Corriger la détection automatique"><i class="bi bi-gear" aria-hidden="true"></i> Colonnes</a>
+    </div>
+  </section>
+
+  <section class="carte">
+    <h2 class="titre-section"><i class="bi bi-arrow-left-right" aria-hidden="true"></i> Comparer deux périodes</h2>
+    <p class="aide">Utile pour voir si les ventes progressent entre deux mois ou deux trimestres.</p>
+    <div class="filtres-barre">
+      <label>Période 1 — du <input type="date" id="p1_debut"></label>
+      <label>au <input type="date" id="p1_fin"></label>
+      <label>Période 2 — du <input type="date" id="p2_debut"></label>
+      <label>au <input type="date" id="p2_fin"></label>
+      <button class="btn btn-fantome" id="btn-comparer" type="button">Comparer</button>
+    </div>
+    <div id="resultat-comparaison" class="comparaison" hidden>
+      <div class="comparaison-avertissement" id="comparaison-avertissement" hidden>
+        <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i> Les deux périodes n'ont pas la même durée — la comparaison est indicative.
+      </div>
+      <div class="comparaison-lignes" id="comparaison-lignes"></div>
+    </div>
+  </section>
+
+  <section class="carte" id="carte-tendance" hidden>
+    <h2 class="titre-section"><i class="bi bi-graph-up-arrow" aria-hidden="true"></i> Tendance et prévision</h2>
+    <p class="aide">
+      Régression linéaire par moindres carrés sur l'évolution mensuelle.
+      Le R² mesure la fiabilité de la projection : au-dessus de 0,7 la tendance est solide,
+      en dessous de 0,4 les données sont trop irrégulières pour être extrapolées.
+    </p>
+    <div class="tendance-grille" id="tendance-grille"></div>
+  </section>
+
+  <section class="grille-graphiques">
+    <div class="carte graphique large">
+      <h3>Évolution du chiffre d'affaires <span class="legende-projection" id="legende-projection" hidden></span>
+        <button type="button" class="btn-png" data-png="chart-evolution"
+                title="Télécharger ce graphique en PNG"
+                aria-label="Télécharger le graphique « Évolution du chiffre d'affaires » au format image"><i class="bi bi-download" aria-hidden="true"></i></button>
+      </h3>
+      <div class="zone-graphique"><canvas id="chart-evolution"></canvas></div>
+    </div>
+    <div class="carte graphique">
+      <h3><i class="bi bi-trophy" aria-hidden="true"></i> Top 5 des produits
+        <button type="button" class="btn-png" data-png="chart-top"
+                title="Télécharger ce graphique en PNG"
+                aria-label="Télécharger le graphique « Top 5 des produits » au format image"><i class="bi bi-download" aria-hidden="true"></i></button>
+      </h3>
+      <div class="zone-graphique"><canvas id="chart-top"></canvas></div>
+    </div>
+    <div class="carte graphique">
+      <h3><i class="bi bi-graph-down-arrow" aria-hidden="true"></i> Flop 5 des produits
+        <button type="button" class="btn-png" data-png="chart-flop"
+                title="Télécharger ce graphique en PNG"
+                aria-label="Télécharger le graphique « Flop 5 des produits » au format image"><i class="bi bi-download" aria-hidden="true"></i></button>
+      </h3>
+      <div class="zone-graphique"><canvas id="chart-flop"></canvas></div>
+    </div>
+    <div class="carte graphique">
+      <h3>Chiffre d'affaires par catégorie
+        <button type="button" class="btn-png" data-png="chart-categories"
+                title="Télécharger ce graphique en PNG"
+                aria-label="Télécharger le graphique « Chiffre d'affaires par catégorie » au format image"><i class="bi bi-download" aria-hidden="true"></i></button>
+      </h3>
+      <div class="zone-graphique"><canvas id="chart-categories"></canvas></div>
+    </div>
+    <div class="carte graphique" id="carte-nuage" hidden>
+      <h3><i class="bi bi-scatter-chart" aria-hidden="true"></i> Dispersion <span id="nuage-total" class="badge">—</span>
+        <button type="button" class="btn-png" data-png="chart-nuage"
+                title="Télécharger ce graphique en PNG"
+                aria-label="Télécharger le graphique « Dispersion » au format image"><i class="bi bi-download" aria-hidden="true"></i></button>
+      </h3>
+      <p class="aide" id="nuage-legende">Le couple de colonnes le plus corrélée apparaîtra ici.</p>
+      <div class="zone-graphique"><canvas id="chart-nuage"></canvas></div>
+    </div>
+    <div class="carte graphique large">
+      <h3>Répartition par catégorie
+        <button type="button" class="btn-png" data-png="chart-repartition"
+                title="Télécharger ce graphique en PNG"
+                aria-label="Télécharger le graphique « Répartition par catégorie » au format image"><i class="bi bi-download" aria-hidden="true"></i></button>
+      </h3>
+      <div class="zone-graphique"><canvas id="chart-repartition"></canvas></div>
+    </div>
+  </section>
+
+  <section class="grille-tableaux">
+    <div class="carte">
+      <h3><i class="bi bi-link-45deg" aria-hidden="true"></i> Corrélations <span id="correlations-total" class="badge">0</span></h3>
+      <p class="aide">Lien de Pearson entre colonnes numériques (de −1 à +1).</p>
+      <div class="tableau-deroulant"><table id="table-correlations"></table></div>
+    </div>
+    <div class="carte">
+      <h3><i class="bi bi-search" aria-hidden="true"></i> Anomalies détectées <span id="anomalies-total" class="badge">0</span></h3>
+      <p class="aide">Valeurs hors de l'intervalle habituel (règle IQR).</p>
+      <div class="tableau-deroulant"><table id="table-anomalies"></table></div>
+    </div>
+    <div class="carte large">
+      <h3>Aperçu des données</h3>
+      <div class="tableau-deroulant"><table id="table-apercu"></table></div>
+      <div class="pagination" id="apercu-pagination" hidden></div>
+    </div>
+  </section>
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  window.SID = "{{ projet.pk }}";
+  window.API_URL = "{% url 'core:api_donnees' %}";
+  window.EXPORT_URL = "{% url 'core:export' %}";
+  window.COMPARISON_URL = "{% url 'core:api_comparaison' %}";
+  // En-tête des exports PNG (titre + note + source), comme un export
+  // Datawrapper porte toujours son contexte avec lui.
+  window.PROJET_NOM = "{{ projet.nom|escapejs }}";
+  window.NOTE_ANALYSTE = "{{ projet.note_analyste|escapejs }}";
+  window.SOURCE_DONNEES = "{{ projet.source_donnees|escapejs }}";
+</script>
+<script src="{% static 'js/dashboard.js' %}"></script>
+{% endblock %}

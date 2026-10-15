@@ -1,0 +1,23 @@
+{% extends "core/base.html" %}
+
+{% block titre %}DataVision — Accès refusé{% endblock %}
+
+{% block description %}Cette action a été refusée : jeton de sécurité manquant ou accès non autorisé.{% endblock %}
+
+{% block contenu %}
+<main class="conteneur" id="contenu-principal">
+  <section class="carte carte-vide">
+    <p class="zone-icone"><i class="bi bi-shield-exclamation" aria-hidden="true"></i></p>
+    <h3>Accès refusé <span class="badge">erreur 403</span></h3>
+    <p class="aide">
+      Cette action a été refusée : le jeton de sécurité de la page était absent ou expiré,
+      ou bien elle concernait une analyse qui n'est pas la tienne.
+    </p>
+    <p class="aide">Si tu as suivi un lien envoyé par message, ouvre la page directement depuis DataVision.</p>
+    <div class="actions-center">
+      <a class="btn btn-principal" href="{% url 'core:projets' %}">Mes analyses</a>
+      <a class="btn btn-fantome" href="{% url 'core:index' %}">Retour à l'accueil</a>
+    </div>
+  </section>
+</main>
+{% endblock %}

@@ -1,0 +1,17 @@
+{% extends "core/base.html" %}
+
+{% block titre %}DataVision — Trop de requêtes{% endblock %}
+
+{% block description %}Limite de débit atteinte : réessaie dans un instant.{% endblock %}
+
+{% block contenu %}
+<main class="conteneur" id="contenu-principal">
+  <section class="carte carte-vide">
+    <h1><i class="bi bi-hourglass-split" aria-hidden="true"></i> Trop de requêtes</h1>
+    <p role="alert">{{ message }}</p>
+    <p class="lien-bas">
+      <a class="btn" href="{% url 'core:projets' %}">← Retour à mes analyses</a>
+    </p>
+  </section>
+</main>
+{% endblock %}

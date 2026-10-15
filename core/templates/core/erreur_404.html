@@ -1,0 +1,19 @@
+{% extends "core/base.html" %}
+
+{% block titre %}DataVision — Page introuvable{% endblock %}
+
+{% block description %}La page demandée n'existe pas ou a été déplacée.{% endblock %}
+
+{% block contenu %}
+<main class="conteneur" id="contenu-principal">
+  <section class="carte carte-vide">
+    <p class="zone-icone"><i class="bi bi-compass" aria-hidden="true"></i></p>
+    <h3>Page introuvable <span class="badge">erreur 404</span></h3>
+    <p class="aide">Cette adresse n'existe pas, ou l'analyse qu'elle désignait a été supprimée.</p>
+    <div class="actions-center">
+      <a class="btn btn-principal" href="{% url 'core:projets' %}">Mes analyses</a>
+      <a class="btn btn-fantome" href="{% url 'core:index' %}">Retour à l'accueil</a>
+    </div>
+  </section>
+</main>
+{% endblock %}

@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Environnement virtuel
+venv/
+env/
+.env
+
+# Django
+db.sqlite3
+staticfiles/
+media/
+
+# Données uploadées
+static/uploads/
+
+# Tests / outils
+.pytest_cache/
+.coverage
+htmlcov/
+
+# JavaScript (tests front uniquement : aucun code produit)
+node_modules/
+npm-debug.log*
+package-lock.json.bak
+
+# Éditeurs
+.vscode/
+.idea/

@@ -1,0 +1,14 @@
+{
+  "name": "datavision-front",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Tests du front-end DataVision (aucun code produit : le site est servi par Django).",
+  "scripts": {
+    "test": "node --test \"tests_js/*.test.js\"",
+    "test:watch": "node --test --watch \"tests_js/*.test.js\"",
+    "build:angular": "npm --prefix front run build"
+  },
+  "devDependencies": {
+    "jsdom": "^25.0.1"
+  }
+}

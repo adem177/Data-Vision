@@ -1,0 +1,24 @@
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block titre %}DataVision — Preuve de concept Angular{% endblock %}
+
+{% block contenu %}
+<main class="conteneur conteneur-etroit" id="contenu-principal">
+  <section class="hero hero-compact">
+    <h1>Preuve de concept Angular</h1>
+    <p>
+      Cette page est hébergée par <strong>Django</strong>, mais son contenu est rendu par
+      <strong>Angular</strong> (source dans <code>front/</code>, build dans <code>static/angular/</code>).
+      Angular interroge les API JSON <code>/api/projets</code> et <code>/api/donnees</code>.
+    </p>
+  </section>
+
+  <app-root><p class="aide">Chargement d'Angular…</p></app-root>
+</main>
+{% endblock %}
+
+{% block scripts %}
+<link rel="stylesheet" href="{% static 'angular/browser/styles.css' %}">
+<script type="module" src="{% static 'angular/browser/main.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,159 @@
+{% extends "core/base.html" %}
+
+{% block titre %}DataVision — Mes analyses{% endblock %}
+
+{% block contenu %}
+<main class="conteneur" id="contenu-principal">
+  <section class="hero hero-compact">
+    <h1>Mes analyses</h1>
+    <p>Bonjour <strong>{{ user.username }}</strong> — {{ total }} analyse{{ total|pluralize }} sauvegardée{{ total|pluralize }}.</p>
+    <p>
+      <a class="btn btn-principal" href="{% url 'core:index' %}">＋ Nouvelle analyse</a>
+      <a class="btn btn-fantome" href="{% url 'core:angular' %}">Page Angular (démo)</a>
+    </p>
+  </section>
+
+  {% if messages %}
+  {% for message in messages %}
+  <div class="alerte">{{ message }}</div>
+  {% endfor %}
+  {% endif %}
+
+  <form method="get" class="barre-outils" role="search">
+    <label for="recherche">Rechercher
+      <input type="search" id="recherche" name="q" value="{{ recherche }}"
+             placeholder="Nom de l'analyse ou du fichier…">
+    </label>
+    <label for="tri">Trier par
+      <select id="tri" name="tri">
+        <option value="recent" {% if tri == "recent" %}selected{% endif %}>Plus récent</option>
+        <option value="ancien" {% if tri == "ancien" %}selected{% endif %}>Plus ancien</option>
+        <option value="nom" {% if tri == "nom" %}selected{% endif %}>Nom (A → Z)</option>
+        <option value="ca_desc" {% if tri == "ca_desc" %}selected{% endif %}>Chiffre d'affaires ↓</option>
+        <option value="ca_asc" {% if tri == "ca_asc" %}selected{% endif %}>Chiffre d'affaires ↑</option>
+      </select>
+    </label>
+    <button type="submit" class="btn btn-fantome">Appliquer</button>
+  </form>
+
+  {% if page %}
+  <p class="compteur-projets">{{ total }} résultat{{ total|pluralize }}{% if recherche %} pour « {{ recherche }} »{% endif %} · page {{ page.number }} sur {{ page.paginator.num_pages }}</p>
+
+  <section class="grille-projets">
+    {% for projet in page %}
+    <article class="carte carte-projet">
+      <div class="projet-tete">
+        <h3><i class="bi bi-file-earmark-text" aria-hidden="true"></i> {{ projet.nom }}</h3>
+        <span class="badge">{{ projet.date_creation|date:"d/m/Y" }}</span>
+      </div>
+      <p class="aide">{{ projet.nom_fichier }} · {{ projet.nb_lignes }} lignes</p>
+      <p class="projet-ca">
+        {% if projet.ca_total is not None %}
+          CA : <strong>{{ projet.ca_total|floatformat:2 }} DT</strong>
+        {% else %}
+          <span class="aide">CA non calculé</span>
+        {% endif %}
+      </p>
+      <div class="projet-actions">
+        <a class="btn" href="{% url 'core:dashboard' projet.pk %}">Ouvrir →</a>
+        <form method="post" action="{% url 'core:supprimer' projet.pk %}"
+              onsubmit="return confirm('Supprimer « {{ projet.nom }} » ?');">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-supprimer">Supprimer</button>
+        </form>
+      </div>
+
+      {% if not projet.fichier_existe %}
+      <p class="alerte" role="alert">
+        <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
+        Fichier perdu sur le serveur — réimporte-le pour ouvrir cette analyse.
+      </p>
+      {% endif %}
+
+      <details class="bloc-depliable">
+        <summary class="btn btn-fantome">
+          <i class="bi bi-pencil" aria-hidden="true"></i> Renommer
+        </summary>
+        <form method="post" action="{% url 'core:renommer' projet.pk %}">
+          {% csrf_token %}
+          <label class="aide" for="nom-{{ projet.pk }}">Nouveau nom de l'analyse
+            <input id="nom-{{ projet.pk }}" type="text" name="nom"
+                   value="{{ projet.nom }}" maxlength="200" required>
+          </label>
+          <button type="submit" class="btn">Enregistrer</button>
+        </form>
+      </details>
+
+      <details class="bloc-depliable">
+        <summary class="btn btn-fantome">
+          <i class="bi bi-arrow-repeat" aria-hidden="true"></i>
+          {% if projet.fichier_existe %}Remplacer le fichier{% else %}Réimporter le fichier{% endif %}
+        </summary>
+        <form method="post" action="{% url 'core:remplacer' projet.pk %}"
+              enctype="multipart/form-data"
+              onsubmit="return confirm('Remplacer les données de « {{ projet.nom }} » ?');">
+          {% csrf_token %}
+          <label class="aide" for="fichier-{{ projet.pk }}">Nouveau fichier .csv / .xlsx
+            <input id="fichier-{{ projet.pk }}" type="file" name="fichier"
+                   accept=".csv,.xlsx,.xls" required>
+          </label>
+          <button type="submit" class="btn">Remplacer</button>
+        </form>
+      </details>
+    </article>
+    {% endfor %}
+  </section>
+
+  {% if page.has_other_pages %}
+  <nav class="pagination-analyses" aria-label="Pages des analyses">
+    {% if page.has_previous %}
+    <a class="btn btn-fantome"
+       href="{% querystring page=page.previous_page_number %}">← Précédente</a>
+    {% endif %}
+    <span class="aide">Page {{ page.number }} sur {{ page.paginator.num_pages }}</span>
+    {% if page.has_next %}
+    <a class="btn btn-fantome"
+       href="{% querystring page=page.next_page_number %}">Suivante →</a>
+    {% endif %}
+  </nav>
+  {% endif %}
+
+  {% elif recherche %}
+  <section class="carte carte-vide">
+    <p class="zone-icone"><i class="bi bi-search" aria-hidden="true"></i></p>
+    <h3>Aucun résultat pour « {{ recherche }} »</h3>
+    <p class="aide">Vérifie l'orthographe ou repars d'une recherche vide.</p>
+    <a class="btn" href="{% url 'core:projets' %}">Voir toutes mes analyses</a>
+  </section>
+
+  {% else %}
+  <section class="carte carte-vide">
+    <p class="zone-icone"><i class="bi bi-folder2-open" aria-hidden="true"></i></p>
+    <h3>Aucune analyse pour l'instant</h3>
+    <p class="aide">Importe un fichier CSV/Excel ou essaie la démo pour commencer.</p>
+    <a class="btn btn-principal" href="{% url 'core:index' %}">Commencer →</a>
+  </section>
+  {% endif %}
+
+  <section class="carte carte-zone-danger">
+    <h3><i class="bi bi-exclamation-triangle" aria-hidden="true"></i> Zone dangereuse</h3>
+    <p class="aide">
+      La suppression de ton compte efface définitivement tes analyses et leurs
+      fichiers. Cette action est irréversible.
+    </p>
+    <details class="bloc-depliable">
+      <summary class="btn btn-supprimer">Supprimer mon compte…</summary>
+      <form method="post" action="{% url 'core:supprimer_compte' %}"
+            onsubmit="return confirm('Supprimer définitivement ton compte et toutes tes analyses ?');">
+        {% csrf_token %}
+        <label class="aide" for="compte-mdp">Confirme avec ton mot de passe actuel
+          <input id="compte-mdp" type="password" name="mot_de_passe"
+                 autocomplete="current-password" required
+                 placeholder="Mot de passe">
+        </label>
+        <button type="submit" class="btn btn-supprimer">Supprimer définitivement</button>
+      </form>
+    </details>
+  </section>
+</main>
+{% endblock %}

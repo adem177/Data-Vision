@@ -1,0 +1,41 @@
+{% extends "core/base.html" %}
+
+{% block titre %}DataVision — Colonnes de {{ projet.nom }}{% endblock %}
+
+{% block contenu %}
+<main class="conteneur conteneur-etroit" id="contenu-principal">
+  <section class="carte">
+    <h1><i class="bi bi-gear" aria-hidden="true"></i> Correspondance des colonnes</h1>
+    <p class="aide">
+      Indique quelle colonne de ton fichier correspond à chaque rôle.
+      C'est utile quand la détection automatique s'est trompée.
+    </p>
+
+    {% if messages %}
+    {% for message in messages %}
+    <div class="alerte">{{ message }}</div>
+    {% endfor %}
+    {% endif %}
+
+    <form method="post" class="formulaire-auth">
+      {% csrf_token %}
+      {% for option in options %}
+      <label>{{ option.libelle }}
+        <select name="{{ option.role }}">
+          <option value="">— Aucune —</option>
+          {% for colonne in option.disponibles %}
+          <option value="{{ colonne }}" {% if option.actuel == colonne %}selected{% endif %}>
+            {{ colonne }}
+          </option>
+          {% endfor %}
+        </select>
+      </label>
+      {% endfor %}
+
+      <button type="submit" class="btn btn-principal">Enregistrer →</button>
+    </form>
+
+    <p class="lien-bas"><a href="{% url 'core:dashboard' projet.pk %}">← Retour au dashboard</a></p>
+  </section>
+</main>
+{% endblock %}

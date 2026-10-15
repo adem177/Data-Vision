@@ -1,0 +1,49 @@
+/* Styles propres à la preuve de concept Angular.
+   Le reste (cartes, KPIs, couleurs, responsive) vient de style.css de Django. */
+
+/* Ligne de sélection (liste des analyses). */
+.poc-selecteur {
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.poc-selecteur label {
+  flex: 1;
+  min-width: 220px;
+}
+
+/* Mini-graphe en barres, dessiné en CSS pur. */
+.poc-barres {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  height: 170px;
+}
+
+.poc-barre {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 6px;
+}
+
+.poc-colonne {
+  width: 100%;
+  max-width: 36px;
+  border-radius: 6px 6px 2px 2px;
+  background: linear-gradient(180deg, var(--accent) 0%, var(--accent-vif) 100%);
+}
+
+.poc-barre small {
+  font-size: 0.7rem;
+  color: var(--texte-doux);
+}
+
+code {
+  font-size: 0.9em;
+}

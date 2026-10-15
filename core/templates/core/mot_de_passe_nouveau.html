@@ -1,0 +1,70 @@
+{% extends "core/base.html" %}
+
+{% block titre %}DataVision — Nouveau mot de passe{% endblock %}
+
+{% block entete %}{% endblock %}
+
+{% block contenu %}
+<main class="auth-scene" id="contenu-principal">
+
+  <section class="auth-formulaire">
+    <a class="auth-logo" href="{% url 'core:index' %}">
+      <span class="auth-pastille" aria-hidden="true"><i class="bi bi-bar-chart-fill"></i></span> DataVision
+    </a>
+
+    <div class="auth-centre">
+      {% if validlink %}
+      <h1 class="auth-titre">Choisir un nouveau mot de passe</h1>
+      <p class="auth-chapo">Ton ancien mot de passe est remplacé dès la validation du formulaire.</p>
+
+      {% if form.errors %}
+      <div class="alerte alerte-erreur">
+        <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i> Corrige les champs en rouge ci-dessous.
+      </div>
+      {% endif %}
+
+      <form method="post" class="formulaire-auth">
+        {% csrf_token %}
+
+        {% for champ in form %}
+        <label>{{ champ.label }}
+          <span class="champ">
+            {{ champ }}
+          </span>
+          {% if champ.errors %}
+          <span class="erreur-champ">{{ champ.errors|striptags }}</span>
+          {% endif %}
+        </label>
+        {% endfor %}
+
+        <button type="submit" class="btn btn-principal auth-soumettre">Modifier le mot de passe</button>
+      </form>
+
+      <p class="lien-bas">
+        <a href="{% url 'core:connexion' %}">← Retour à la connexion</a>
+      </p>
+      {% else %}
+      <h1 class="auth-titre"><i class="bi bi-emoji-frown" aria-hidden="true"></i> Lien expiré</h1>
+      <p class="auth-chapo">Ce lien n'est plus valide (il a déjà été utilisé ou il a expiré). Demande-en simplement un nouveau.</p>
+
+      <div class="alerte alerte-erreur">
+        <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i> Réinitialisation impossible avec ce lien.
+      </div>
+
+      <p class="lien-bas">
+        <a href="{% url 'core:mot_de_passe_oublie' %}">Recevoir un nouveau lien</a> ·
+        <a href="{% url 'core:connexion' %}">Retour à la connexion</a>
+      </p>
+      {% endif %}
+    </div>
+
+    <p class="auth-pied">
+      <span>Copyright © 2026 DataVision</span>
+      <span>Analyse de données simplifiée</span>
+    </p>
+  </section>
+
+  {% include "core/vitrine_auth.html" with page="connexion" %}
+
+</main>
+{% endblock %}

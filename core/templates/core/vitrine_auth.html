@@ -1,0 +1,88 @@
+{# Vitrine décorative des pages d'authentification (colonne de droite) : reçoit `page`. #}
+<aside class="auth-vitrine" aria-hidden="true">
+  <div>
+    {% if page == "inscription" %}
+    <h2 class="auth-vitrine-titre">De un fichier CSV brut à un tableau de bord complet.</h2>
+    <p class="auth-vitrine-chapo">Créez votre compte : c'est gratuit et cela prend dix secondes.</p>
+    {% else %}
+    <h2 class="auth-vitrine-titre">Pilotez vos données sans écrire une ligne de code.</h2>
+    <p class="auth-vitrine-chapo">Connectez-vous pour retrouver vos tableaux de bord, graphiques et rapports.</p>
+    {% endif %}
+  </div>
+
+  <div class="apercu">
+    <div class="apercu-barre">
+      <span></span><span></span><span></span>
+      <em>datavision.app / tableau-de-bord</em>
+    </div>
+
+    <div class="apercu-grille">
+      <div class="apercu-carte">
+        <small>CA total</small>
+        <strong>189 374 DT</strong>
+        <i class="chip chip-hausse">▲ 12,4 %</i>
+      </div>
+      <div class="apercu-carte">
+        <small>Lignes lues</small>
+        <strong>6 248</strong>
+        <i class="chip chip-hausse">▲ 4,1 %</i>
+      </div>
+      <div class="apercu-carte">
+        <small>Profit estimé</small>
+        <strong>25 684 DT</strong>
+        <i class="chip chip-baisse">▼ 2,0 %</i>
+      </div>
+    </div>
+
+    <div class="apercu-deux">
+      <div class="apercu-carte apercu-graphique">
+        <small>Tendance du chiffre d'affaires</small>
+        <svg viewBox="0 0 320 110" preserveAspectRatio="none" role="presentation">
+          <defs>
+            <linearGradient id="aire-vitrine" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#6366f1" stop-opacity="0.45"/>
+              <stop offset="100%" stop-color="#6366f1" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          <path d="M0,86 L27,78 L54,82 L81,60 L108,68 L135,48 L162,55 L189,36 L216,44 L243,26 L270,33 L297,17 L320,22 L320,110 L0,110 Z"
+                fill="url(#aire-vitrine)"/>
+          <path d="M0,86 L27,78 L54,82 L81,60 L108,68 L135,48 L162,55 L189,36 L216,44 L243,26 L270,33 L297,17 L320,22"
+                fill="none" stroke="#4f46e5" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+
+      <div class="apercu-carte apercu-colonnes">
+        <i style="height: 44%"></i>
+        <i style="height: 68%"></i>
+        <i style="height: 36%"></i>
+        <i style="height: 84%"></i>
+        <i style="height: 58%"></i>
+        <i style="height: 72%"></i>
+      </div>
+    </div>
+
+    <div class="apercu-carte apercu-tableau">
+      <div class="ligne-apercu">
+        <b>ventes_2026.csv</b><span>12 480 lignes</span><i class="chip chip-hausse">Analysé</i>
+      </div>
+      <div class="ligne-apercu">
+        <b>clients_tunisie.xlsx</b><span>3 215 lignes</span><i class="chip chip-hausse">Analysé</i>
+      </div>
+      <div class="ligne-apercu">
+        <b>produits_q4.csv</b><span>1 020 lignes</span><i class="chip chip-attente">En cours</i>
+      </div>
+    </div>
+
+    <div class="apercu-badge">
+      <svg class="donut" viewBox="0 0 42 42">
+        <circle cx="21" cy="21" r="15.9" fill="none" stroke="#eef1f7" stroke-width="6"/>
+        <circle cx="21" cy="21" r="15.9" fill="none" stroke="#4f46e5" stroke-width="6"
+                stroke-linecap="round" stroke-dasharray="78 22" stroke-dashoffset="25"/>
+      </svg>
+      <div>
+        <strong>78 %</strong>
+        <span>colonnes reconnues</span>
+      </div>
+    </div>
+  </div>
+</aside>

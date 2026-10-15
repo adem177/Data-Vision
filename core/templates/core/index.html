@@ -1,0 +1,94 @@
+{% extends "core/base.html" %}
+
+{% block titre %}DataVision — Analyse automatique de données{% endblock %}
+
+{% block contenu %}
+<main class="conteneur" id="contenu-principal">
+  <section class="hero">
+    <h1>Transforme tes données brutes en dashboard interactif</h1>
+    <p>
+      Importe un fichier <strong>CSV</strong> ou <strong>Excel</strong> : DataVision nettoie,
+      analyse et génère automatiquement KPIs, graphiques et rapport exportable.
+      Crée un compte pour retrouver tes analyses sauvegardées.
+    </p>
+  </section>
+
+  {% if erreur %}
+  <div class="alerte alerte-erreur"><i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i> {{ erreur }}</div>
+  {% endif %}
+
+  {% if user.is_authenticated %}
+    <section class="carte zone-import">
+      <h2 class="titre-section">Nouvelle analyse</h2>
+      <form method="post" action="{% url 'core:upload' %}" enctype="multipart/form-data" class="formulaire-import">
+        {% csrf_token %}
+        <label class="zone-fichier" for="fichier">
+          <span class="zone-icone"><i class="bi bi-cloud-arrow-up" aria-hidden="true"></i></span>
+          <span><strong>Clique pour choisir</strong> ou glisse un fichier ici</span>
+          <span class="zone-aide">.csv · .xlsx — {{ taille_max_mo }} Mo max</span>
+          <input type="file" id="fichier" name="fichier" accept=".csv,.xlsx,.xls" required>
+          <span id="nom-fichier" class="nom-fichier"><i class="bi bi-paperclip" hidden></i><span id="nom-fichier-texte"></span></span>
+        </label>
+        <button type="submit" class="btn btn-principal">Analyser →</button>
+      </form>
+      <p class="lien-bas">Pas de fichier sous la main ? <a href="{% url 'core:demo' %}">Essayer la démo (5 000 ventes)</a></p>
+    </section>
+  {% else %}
+    <section class="carte carte-vide">
+      <p class="zone-icone"><i class="bi bi-lock" aria-hidden="true"></i></p>
+      <h3>Connecte-toi pour analyser tes données</h3>
+      <p class="aide">Crée un compte gratuit pour importer tes fichiers et retrouver toutes tes analyses.</p>
+      <div class="actions-center">
+        <a class="btn btn-principal" href="{% url 'core:inscription' %}">Créer un compte →</a>
+        <a class="btn btn-fantome" href="{% url 'core:connexion' %}">J'ai déjà un compte</a>
+      </div>
+    </section>
+  {% endif %}
+
+  <section class="trois-colonnes">
+    <div class="carte">
+      <h3><i class="bi bi-eraser" aria-hidden="true"></i> Nettoyage auto</h3>
+      <p>Doublons supprimés, dates converties, valeurs manquantes détectées.</p>
+    </div>
+    <div class="carte">
+      <h3><i class="bi bi-graph-up" aria-hidden="true"></i> KPIs instantanés</h3>
+      <p>Chiffre d'affaires, panier moyen, produits vendus, tendances.</p>
+    </div>
+    <div class="carte">
+      <h3><i class="bi bi-funnel" aria-hidden="true"></i> Filtres &amp; export</h3>
+      <p>Filtre par catégorie et période, exporte en CSV ou Excel.</p>
+    </div>
+  </section>
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const champ = document.getElementById("fichier");
+  const texteNom = document.getElementById("nom-fichier-texte");
+  const iconeNom = document.querySelector("#nom-fichier .bi");
+  const zone = document.querySelector(".zone-fichier");
+
+  // Nom du fichier + trombone : le texte est injecté via textContent (pas de XSS).
+  function afficherNom(nom) {
+    iconeNom.hidden = !nom;
+    texteNom.textContent = nom || "";
+  }
+
+  if (champ) {
+    champ.addEventListener("change", () => {
+      afficherNom(champ.files.length ? champ.files[0].name : "");
+    });
+
+    // Glisser-déposer
+    ["dragover", "dragenter"].forEach((evenement) =>
+      zone.addEventListener(evenement, (e) => { e.preventDefault(); zone.classList.add("survol"); }));
+    ["dragleave", "drop"].forEach((evenement) =>
+      zone.addEventListener(evenement, (e) => { e.preventDefault(); zone.classList.remove("survol"); }));
+    zone.addEventListener("drop", (e) => {
+      champ.files = e.dataTransfer.files;
+      if (champ.files.length) afficherNom(champ.files[0].name);
+    });
+  }
+</script>
+{% endblock %}

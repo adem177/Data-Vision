@@ -1,0 +1,78 @@
+# Intégration continue : les tests tournent à chaque push et Pull Request.
+#
+# Le badge en haut du README reflète l'état de cette workflow.
+
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  tests:
+    name: Tests Django (${{ matrix.python }})
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.11", "3.12"]
+
+    steps:
+      - name: 📥 Récupérer le code
+        uses: actions/checkout@v4
+
+      - name: 🐍 Installer Python ${{ matrix.python }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+
+      - name: 📦 Installer les dépendances
+        run: pip install -r requirements.txt
+
+      - name: 🎲 Générer les données de démonstration
+        run: python data_generator.py
+
+      - name: 🔍 Vérifier la configuration Django
+        run: python manage.py check
+
+      - name: 🔐 Vérifier la configuration de production
+        # Même configuration que Render (DEBUG éteint) : cela vérifie les
+        # réglages de sécurité et le garde-fou SECRET_KEY en conditions réelles.
+        run: python manage.py check --deploy
+        env:
+          DJANGO_DEBUG: "False"
+          DJANGO_SECRET_KEY: cle-de-test-pour-la-ci-pas-secrete-mais-suffisamment-longue-0123456789
+
+      - name: 🗄️ Préparer les migrations
+        run: python manage.py migrate --noinput
+
+      - name: ✅ Lancer les tests
+        run: python -m pytest tests/ -v
+
+      - name: 📦 Vérifier que le projet se collecte (static)
+        run: python manage.py collectstatic --noinput --clear
+
+  # Le front n'a aucun framework : Node fournit le moteur de tests intégré,
+  # jsdom sert uniquement de DOM. Aucun code produit n'est écrit en JS.
+  tests-front:
+    name: Tests JavaScript (Node)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Récupérer le code
+        uses: actions/checkout@v4
+
+      - name: 🟢 Installer Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: 📦 Installer les dépendances de test
+        run: npm ci
+
+      - name: ✅ Lancer les tests du front
+        run: npm test

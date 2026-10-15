@@ -1,0 +1,33 @@
+{% extends "core/base.html" %}
+
+{% block titre %}DataVision — Mot de passe modifié{% endblock %}
+
+{% block entete %}{% endblock %}
+
+{% block contenu %}
+<main class="auth-scene" id="contenu-principal">
+
+  <section class="auth-formulaire">
+    <a class="auth-logo" href="{% url 'core:index' %}">
+      <span class="auth-pastille" aria-hidden="true"><i class="bi bi-bar-chart-fill"></i></span> DataVision
+    </a>
+
+    <div class="auth-centre">
+      <h1 class="auth-titre"><i class="bi bi-check2-circle" aria-hidden="true"></i> Mot de passe modifié</h1>
+      <p class="auth-chapo">Ton nouveau mot de passe est en vigueur. Tu peux maintenant te connecter.</p>
+
+      <p class="lien-bas">
+        <a class="btn btn-principal auth-soumettre lien-bouton" href="{% url 'core:connexion' %}">Se connecter</a>
+      </p>
+    </div>
+
+    <p class="auth-pied">
+      <span>Copyright © 2026 DataVision</span>
+      <span>Analyse de données simplifiée</span>
+    </p>
+  </section>
+
+  {% include "core/vitrine_auth.html" with page="connexion" %}
+
+</main>
+{% endblock %}

@@ -1,0 +1,10 @@
+{% autoescape off %}Bonjour {{ user.get_username }},
+
+Tu as demandé la réinitialisation du mot de passe de ton compte {{ site_name }}.
+Pour en choisir un nouveau, ouvre ce lien :
+
+{{ protocol }}://{{ domain }}{% url 'core:mot_de_passe_reinit' uidb64=uid token=token %}
+
+Ce lien n'est utilisable qu'une seule fois. Si tu n'es pas à l'origine de cette demande, ignore cet e-mail : ton mot de passe ne changera pas.
+
+— L'équipe DataVision{% endautoescape %}
