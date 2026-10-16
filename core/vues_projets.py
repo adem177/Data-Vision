@@ -122,7 +122,26 @@ def upload(request):
 
 @login_required
 def demo(request):
-    """Copie le jeu de démonstration dans les projets de l'utilisateur."""
+    """Copie le jeu de démonstration dans les projets de l'utilisateur.
+
+    Idempotent : si l'utilisateur possède déjà l'analyse de démonstration
+    et que son fichier est intact, on l'y renvoie au lieu d'empiler des
+    doublons — « Essayer la démo » peut être cliqué autant de fois que
+    voulu. Un marqueur `est_demo` (et non le nom, éditable) identifie
+    l'analyse.
+    """
+    existante = request.user.projets.filter(est_demo=True).first()
+    if existante:
+        if existante.fichier_existe:
+            return redirect("core:dashboard", pk=existante.pk)
+        # Fichier perdu (purge des media/) : on recharge la démo sur place.
+        oublier_analyseur(existante)
+        projet = existante
+    else:
+        projet = Projet(
+            nom="Démo — Ventes 2026", proprietaire=request.user, est_demo=True
+        )
+
     source = settings.BASE_DIR / "data" / "sample_sales.csv"
     if not source.exists():
         return _erreur(
@@ -130,7 +149,6 @@ def demo(request):
             "Jeu de démonstration absent. Lance d'abord : python data_generator.py",
         )
 
-    projet = Projet(nom="Démo — Ventes 2026", proprietaire=request.user)
     nom_stockage = f"{uuid.uuid4().hex[:8]}_sample_sales.csv"
     with open(source, "rb") as flux:
         projet.fichier.save(nom_stockage, flux, save=False)

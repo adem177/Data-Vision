@@ -131,3 +131,16 @@ def test_demo_casse_affiche_une_erreur_sans_orphelin(client_connecte):
     assert reponse.status_code == 200
     assert b"fichier corrompu" in reponse.content
     assert Projet.objects.count() == 0
+
+
+def test_demo_idempotente_reutilise_l_analyse(client_connecte):
+    """« Essayer la démo » plusieurs fois : une seule analyse, pas de doublon."""
+    premier = client_connecte.get("/demo", follow=True)
+    second = client_connecte.get("/demo", follow=True)
+
+    assert premier.status_code == 200
+    assert second.status_code == 200
+    unique = Projet.objects.get()
+    assert unique.est_demo
+    # Le second appel se termine sur le dashboard de la première analyse.
+    assert second.request["PATH_INFO"] == f"/dashboard/{unique.pk}"

@@ -59,7 +59,7 @@ class Command(BaseCommand):
             self.stdout.write("Une analyse est déjà chargée pour ce compte.")
             return
 
-        projet = Projet(nom=NOM_PROJET, proprietaire=utilisateur)
+        projet = Projet(nom=NOM_PROJET, proprietaire=utilisateur, est_demo=True)
         nom_stockage = f"{uuid.uuid4().hex[:8]}_sample_sales.csv"
         with open(source, "rb") as flux:
             projet.fichier.save(nom_stockage, flux, save=False)

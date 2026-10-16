@@ -46,6 +46,11 @@ class Projet(models.Model):
         default="",
         help_text="Provenance des données, citée comme en journalisme.",
     )
+    est_demo = models.BooleanField(
+        "jeu de démonstration",
+        default=False,
+        help_text="Marque l'analyse créée par /demo : la vue la réutilise au lieu d'un doublon.",
+    )
 
     class Meta:
         ordering = ["-date_creation"]
