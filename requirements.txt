@@ -1,11 +1,17 @@
-django>=5.2
-django-allauth>=65.19
-requests>=2.31
-pandas>=2.2
-numpy>=1.26
-openpyxl>=3.1
-reportlab>=4.0
-dj-database-url>=2.0
-django-redis>=5.4
-gunicorn>=21.0
-pytest>=8.0
+# Dépendances épinglées : les versions réellement utilisées et testées
+# (Python 3.14, relevé du 16/10/2026). Épingler évite qu'un `pip install`
+# tire une version neuve différente entre la machine de dev, la CI et Render.
+#
+# Après toute mise à jour : pip install -r requirements.txt
+# puis python -m pytest tests/ -q au vert avant de commiter.
+django==6.1.2
+django-allauth==65.19.7
+requests==2.34.2
+pandas==3.0.3
+numpy==2.4.6
+openpyxl==3.1.5
+reportlab==5.0.1
+dj-database-url==3.1.2
+django-redis==7.0.0
+gunicorn==26.2.0
+pytest==9.1.1

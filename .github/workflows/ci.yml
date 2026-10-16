@@ -17,7 +17,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python: ["3.11", "3.12"]
+        # Aligné sur les versions réellement utilisées : Django 6 exige
+        # Python 3.12+ (le pin de requirements.txt ne s'installerait plus
+        # sur 3.11).
+        python: ["3.12", "3.13"]
 
     steps:
       - name: 📥 Récupérer le code
