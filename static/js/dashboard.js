@@ -14,14 +14,106 @@ const COMPARISON_URL = window.COMPARISON_URL || "/api/comparaison";
  * de la seule nuance. */
 const PALETTE = ["#0072B2", "#D55E00", "#009E73", "#CC79A7", "#56B4E9", "#E69F00"];
 const PALETTE_TOP = PALETTE.filter((c) => c !== "#D55E00");
+/* Variante « marque » (thème personnalisé façon Datawrapper) : une famille
+ * teal → cyan, activable au choix depuis le tableau de bord. Le défaut
+ * reste Okabe-Ito, seule palette certifiée daltonisme par les tests. */
+const PALETTE_MARQUE = ["#0B6E7F", "#0D8798", "#0FA3B0", "#17BCC4", "#3BCFD0", "#67DED6"];
+
+// Palette effective : variante marque si elle est mémorisée, sinon Okabe-Ito.
+function paletteActive() {
+  try {
+    return window.localStorage.getItem("datavision-palette") === "marque"
+      ? PALETTE_MARQUE
+      : PALETTE;
+  } catch (e) {
+    return PALETTE;
+  }
+}
+
+function enModeMarque() {
+  return paletteActive() === PALETTE_MARQUE;
+}
+
+function majLibellePalette() {
+  const el = document.getElementById("btn-palette-libelle");
+  if (el) el.textContent = enModeMarque() ? "Palette : teal" : "Palette : Okabe-Ito";
+}
+
+/* Dégradé de marque horizontal : il s'étale sur toute la largeur du
+ * graphique et chaque barre (ou pastille) en prélève sa portion — les
+ * valeurs courtes restent teal, les longues atteignent le cyan. */
+function degradeBarres(chart, debut, fin) {
+  if (!chart || !chart.chartArea || !chart.ctx) return debut;
+  const g = chart.ctx.createLinearGradient(chart.chartArea.left, 0, chart.chartArea.right, 0);
+  g.addColorStop(0, debut);
+  g.addColorStop(1, fin);
+  return g;
+}
 const charts = {};
 // Page courante de l'aperçu : réinitialisée à chaque changement de filtre.
 let pageApercu = 1;
 
+// Mouvement réduit demandé au système : aucune animation des graphiques.
+function animationsReduites() {
+  return typeof window !== "undefined" && window.matchMedia
+    ? window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    : false;
+}
+
+// Apparitions subtiles façon Flourish : ~650 ms, tracé progressif des
+// courbes et cascade légère des barres. Désactivées si le système le demande.
+function animations() {
+  if (animationsReduites()) return false;
+  return {
+    duration: 650,
+    easing: "easeOutQuart",
+    delay: (ctx) =>
+      ctx.type === "data" && ctx.mode === "default"
+        ? Math.min(ctx.dataIndex * 35, 280)
+        : 0,
+  };
+}
+
+/* Effet « focus » au survol d'une barre : les autres s'atténuent sous un
+ * voile à la couleur de fond, la donnée visée reste seule en couleur. */
+const voileBarres = {
+  id: "voileBarres",
+  afterDatasetsDraw(graphe, args, opts) {
+    if (!opts || !opts.actif) return;
+    const actifs = graphe.tooltip ? graphe.tooltip.getActiveElements() : [];
+    if (!actifs.length || !actifs[0].element || actifs[0].element.base === undefined) return;
+    const el = actifs[0].element;
+    const { ctx, chartArea } = graphe;
+    const teinte = getComputedStyle(document.body).getPropertyValue("--carte").trim();
+    ctx.save();
+    ctx.fillStyle = /^#[0-9a-f]{6}$/i.test(teinte) ? teinte + "9e" : "rgba(255, 255, 255, 0.62)";
+    const vertical = opts.axe !== "x";
+    const largeur = Math.max(el.width || 0, 1);
+    const hauteur = Math.max(el.height || 0, 1);
+    const bx1 = vertical ? el.x - largeur / 2 : Math.min(el.x, el.base);
+    const bx2 = vertical ? el.x + largeur / 2 : Math.max(el.x, el.base);
+    const by1 = vertical ? Math.min(el.y, el.base) : el.y - hauteur / 2;
+    const by2 = vertical ? Math.max(el.y, el.base) : el.y + hauteur / 2;
+    // Marge utile sur les barres à puces : la pastille dépasse la tige.
+    const garde = opts.garde || 0;
+    const gx1 = bx1 - garde;
+    const gx2 = bx2 + garde;
+    const gy1 = by1 - garde;
+    const gy2 = by2 + garde;
+    const { left, top, right, bottom } = chartArea;
+    ctx.fillRect(left, top, right - left, Math.max(gy1 - top, 0));
+    ctx.fillRect(left, gy2, right - left, Math.max(bottom - gy2, 0));
+    ctx.fillRect(left, gy1, Math.max(gx1 - left, 0), Math.max(gy2 - gy1, 0));
+    ctx.fillRect(gx2, gy1, Math.max(right - gx2, 0), Math.max(gy2 - gy1, 0));
+    ctx.restore();
+  },
+};
+
 // Chart.js n'existe pas sous Node (tests) : l'amorçage des styles est optionnel.
 if (typeof Chart !== "undefined" && Chart.defaults) {
-  Chart.defaults.font.family = "Segoe UI, system-ui, sans-serif";
-  Chart.defaults.color = "#64748b";
+  Chart.defaults.font.family = '"Inter", "Segoe UI", system-ui, sans-serif';
+  Chart.defaults.color = "#69707a";
+  if (Chart.register) Chart.register(voileBarres);
 }
 
 // ---------- Formats ----------
@@ -72,13 +164,14 @@ function aire(canvas, hex) {
 function infobulle(formatage) {
   return {
     backgroundColor: couleur("--carte", "#ffffff"),
-    titleColor: couleur("--texte", "#16203a"),
-    bodyColor: couleur("--texte-doux", "#64748b"),
-    borderColor: couleur("--bordure", "#e5e9f2"),
+    titleColor: couleur("--texte", "#16181d"),
+    bodyColor: couleur("--texte-doux", "#69707a"),
+    borderColor: couleur("--bordure", "#e3e6ea"),
     borderWidth: 1,
     padding: 12,
     cornerRadius: 12,
     boxPadding: 6,
+    caretSize: 6,
     usePointStyle: true,
     titleFont: { weight: "700", size: 12 },
     bodyFont: { size: 12.5 },
@@ -87,21 +180,36 @@ function infobulle(formatage) {
   };
 }
 
+// Légende cliquable : le clic masque ou réaffiche une série. Puces rondes
+// sous le graphique, dans le gris du texte courant.
+function legendeCliquable() {
+  return {
+    usePointStyle: true,
+    pointStyle: "circle",
+    boxWidth: 8,
+    boxHeight: 8,
+    padding: 16,
+    color: couleur("--texte-doux", "#69707a"),
+    font: { size: 11.5, weight: "600" },
+  };
+}
+
 function axeX(extra = {}) {
   return {
     grid: { display: false },
     border: { display: false },
-    ticks: { color: couleur("--texte-doux", "#64748b"), font: { size: 11 }, maxRotation: 0 },
+    ticks: { color: couleur("--texte-doux", "#69707a"), font: { size: 11 }, maxRotation: 0 },
     ...extra,
   };
 }
 
 function axeY(extra = {}) {
   return {
-    grid: { color: couleur("--bordure-fine", "#eef1f7"), drawTicks: false, borderDash: [3, 3] },
+    // Filets pleins et très clairs : la grille structure sans casser la lecture.
+    grid: { color: couleur("--bordure-fine", "#edeff2"), drawTicks: false },
     border: { display: false },
     ticks: {
-      color: couleur("--texte-doux", "#64748b"),
+      color: couleur("--texte-doux", "#69707a"),
       padding: 8,
       font: { size: 11 },
       callback: (v) => formatNombre(v),
@@ -111,10 +219,17 @@ function axeY(extra = {}) {
 }
 
 // Axes pour les barres horizontales (Top / Flop) : valeur en x, libellé en y.
+// Mise en page façon Datawrapper : graduations en haut, libellés de
+// catégories en gras à gauche, collés aux pastilles.
 function axesBarreH() {
   return {
-    x: axeY({ ticks: { color: couleur("--texte-doux", "#64748b"), font: { size: 11 }, callback: (v) => formatNombre(v) } }),
-    y: axeX({ ticks: { color: couleur("--texte", "#16203a"), font: { size: 12, weight: "600" } } }),
+    x: axeY({
+      position: "top",
+      ticks: { color: couleur("--texte-doux", "#69707a"), font: { size: 11 }, callback: (v) => formatNombre(v) },
+    }),
+    y: axeX({
+      ticks: { color: couleur("--texte", "#16181d"), font: { size: 12.5, weight: "700" }, padding: 10 },
+    }),
   };
 }
 
@@ -123,6 +238,7 @@ function commun(plugins, scales) {
     responsive: true,
     maintainAspectRatio: false,
     interaction: { mode: "index", intersect: false },
+    animation: animations(),
     plugins,
     scales,
   };
@@ -132,6 +248,11 @@ function creerGraphiques() {
   // Permet de reconstruire les graphiques (changement de thème) sans doublon.
   Object.values(charts).forEach((c) => c && c.destroy());
   Object.keys(charts).forEach((k) => delete charts[k]);
+
+  // Palette courante : Okabe-Ito par défaut, variante « marque » au choix.
+  const palette = paletteActive();
+  const marque = palette !== PALETTE;
+  const paletteTop = marque ? palette.slice(0, 5) : PALETTE_TOP;
 
   const canvasEvolution = document.getElementById("chart-evolution");
 
@@ -143,15 +264,15 @@ function creerGraphiques() {
         {
           label: "Chiffre d'affaires (DT)",
           data: [],
-          borderColor: PALETTE[0],
-          backgroundColor: aire(canvasEvolution, PALETTE[0]),
+          borderColor: palette[0],
+          backgroundColor: aire(canvasEvolution, palette[0]),
           fill: true,
           tension: 0.4,
           borderWidth: 2.5,
           pointRadius: 3,
           pointHoverRadius: 7,
-          pointBackgroundColor: PALETTE[0],
-          pointHoverBackgroundColor: PALETTE[0],
+          pointBackgroundColor: palette[0],
+          pointHoverBackgroundColor: palette[0],
           pointHoverBorderColor: "#fff",
           pointHoverBorderWidth: 2,
         },
@@ -162,7 +283,7 @@ function creerGraphiques() {
           // affaiblie », le pointillé dit « pas encore mesurée ».
           label: "Projection",
           data: [],
-          borderColor: PALETTE[4],
+          borderColor: palette[4],
           borderDash: [7, 5],
           fill: false,
           tension: 0.4,
@@ -175,7 +296,10 @@ function creerGraphiques() {
     // Plugin maison : anneau + étiquettes sur max / min / variations.
     plugins: [annotationsCourbe],
     options: commun(
-      { legend: { display: false }, tooltip: infobulle((c) => " " + formatDT(c.parsed.y)) },
+      {
+        legend: { display: true, position: "bottom", labels: legendeCliquable() },
+        tooltip: infobulle((c) => " " + formatDT(c.parsed.y)),
+      },
       { x: axeX(), y: axeY() }
     ),
   });
@@ -187,15 +311,23 @@ function creerGraphiques() {
       datasets: [{
         label: "Chiffre d'affaires (DT)",
         data: [],
-        backgroundColor: PALETTE[0],
-        hoverBackgroundColor: "#005A8F", // le bleu principal assombri
+        // En mode marque, la barre prélève sa portion du dégradé horizontal
+        // de la marque ; en défaut, le bleu Okabe-Ito, plat et certifié.
+        backgroundColor: marque
+          ? (ctx) => degradeBarres(ctx.chart, palette[0], palette[3])
+          : PALETTE[0],
+        hoverBackgroundColor: marque ? palette[0] : "#005A8F", // le bleu principal assombri
         borderRadius: 8,
         borderSkipped: false,
         maxBarThickness: 48,
       }],
     },
     options: commun(
-      { legend: { display: false }, tooltip: infobulle((c) => " " + formatDT(c.parsed.y)) },
+      {
+        legend: { display: false },
+        tooltip: infobulle((c) => " " + formatDT(c.parsed.y)),
+        voileBarres: { actif: true, axe: "y" },
+      },
       { x: axeX(), y: axeY() }
     ),
   });
@@ -206,7 +338,7 @@ function creerGraphiques() {
       labels: [],
       datasets: [{
         data: [],
-        backgroundColor: PALETTE,
+        backgroundColor: palette,
         borderColor: couleur("--carte", "#ffffff"),
         borderWidth: 3,
         hoverOffset: 14,
@@ -215,6 +347,7 @@ function creerGraphiques() {
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      animation: animations(),
       cutout: "68%",
       plugins: {
         legend: {
@@ -235,7 +368,15 @@ function creerGraphiques() {
   });
 
   const optionsBarres = (axe) => commun(
-    { legend: { display: false }, tooltip: infobulle((c) => " " + formatDT(c.parsed.x)) },
+    {
+      legend: { display: false },
+      tooltip: {
+        ...infobulle((c) => " " + formatDT(c.parsed.x)),
+        // La tige et sa pastille portent la même valeur : une seule ligne.
+        filter: (item) => item.datasetIndex === 1,
+      },
+      voileBarres: { actif: true, axe: "x", garde: 9 },
+    },
     axe
   );
 
@@ -252,8 +393,8 @@ function creerGraphiques() {
           data: [],
           // 70 % d'opacité : quand les points se superposent, leur densité
           // reste lisible au lieu de former une seule tache opaque.
-          backgroundColor: PALETTE[0] + "B3",
-          hoverBackgroundColor: PALETTE[0],
+          backgroundColor: palette[0] + "B3",
+          hoverBackgroundColor: palette[0],
           pointRadius: 3,
           pointHoverRadius: 6,
         },
@@ -263,7 +404,7 @@ function creerGraphiques() {
           label: "Droite de régression",
           data: [],
           type: "line",
-          borderColor: PALETTE[4],
+          borderColor: palette[4],
           borderDash: [7, 5],
           borderWidth: 2,
           pointRadius: 0,
@@ -273,7 +414,7 @@ function creerGraphiques() {
     },
     options: commun(
       {
-        legend: { display: false },
+        legend: { display: true, position: "bottom", labels: legendeCliquable() },
         tooltip: infobulle((c) => ` ${formatNombre(c.parsed.x)} × ${formatNombre(c.parsed.y)}`),
       },
       {
@@ -283,18 +424,37 @@ function creerGraphiques() {
     ),
   });
 
+  // Barres à puces (lollipop) : une tige fine grise, une pastille colorée —
+  // l'allure « prête publication » de Datawrapper, mêmes données qu'avant.
   charts.top = new Chart(document.getElementById("chart-top"), {
     type: "bar",
     data: {
       labels: [],
-      datasets: [{
-        label: "Chiffre d'affaires (DT)",
-        data: [],
-        backgroundColor: PALETTE_TOP,
-        borderRadius: 8,
-        borderSkipped: false,
-        maxBarThickness: 26,
-      }],
+      datasets: [
+        {
+          label: "Tige",
+          data: [],
+          backgroundColor: couleur("--bordure", "#e3e6ea"),
+          barThickness: 3,
+          maxBarThickness: 3,
+          borderRadius: 0,
+          borderSkipped: false,
+        },
+        {
+          label: "Chiffre d'affaires (DT)",
+          type: "scatter",
+          data: [],
+          pointRadius: 7,
+          pointHoverRadius: 9,
+          pointHitRadius: 12,
+          // En mode marque, chaque pastille prélève le dégradé à sa position ;
+          // en défaut, une teinte Okabe-Ito par barre.
+          pointBackgroundColor: marque
+            ? (ctx) => degradeBarres(ctx.chart, palette[0], palette[3])
+            : paletteTop,
+          pointHoverBackgroundColor: marque ? palette[0] : paletteTop,
+        },
+      ],
     },
     options: { ...optionsBarres(axesBarreH()), indexAxis: "y" },
   });
@@ -303,17 +463,30 @@ function creerGraphiques() {
     type: "bar",
     data: {
       labels: [],
-      datasets: [{
-        label: "Chiffre d'affaires (DT)",
-        data: [],
-        // Vermillon d'Okabe-Ito : accessible sur les deux thèmes et porteur
-        // du sens « négatif » sans avoir besoin d'un rouge-vert.
-        backgroundColor: "#D55E00",
-        hoverBackgroundColor: "#9C4400",
-        borderRadius: 8,
-        borderSkipped: false,
-        maxBarThickness: 26,
-      }],
+      datasets: [
+        {
+          label: "Tige",
+          data: [],
+          backgroundColor: couleur("--bordure", "#e3e6ea"),
+          barThickness: 3,
+          maxBarThickness: 3,
+          borderRadius: 0,
+          borderSkipped: false,
+        },
+        {
+          // Vermillon d'Okabe-Ito : accessible sur les deux thèmes et porteur
+          // du sens « négatif ». Il est conservé tel quel aussi en mode
+          // marque — le rouge du Flop ne dépend jamais de la teinte de marque.
+          label: "Chiffre d'affaires (DT)",
+          type: "scatter",
+          data: [],
+          pointRadius: 7,
+          pointHoverRadius: 9,
+          pointHitRadius: 12,
+          pointBackgroundColor: "#D55E00",
+          pointHoverBackgroundColor: "#9C4400",
+        },
+      ],
     },
     options: { ...optionsBarres(axesBarreH()), indexAxis: "y" },
   });
@@ -609,12 +782,12 @@ function calculerAnnotations(mois, ca) {
   return annotations;
 }
 
-// Teinte d'anneau par type : bleu pour les extrêmes, vert pour la hausse,
-// vermillon pour la baisse — toutes issues de la palette Okabe-Ito.
-const TEINTES_ANNOTATION = {
-  max: PALETTE[0], min: PALETTE[0],
-  hausse: PALETTE[2], baisse: PALETTE[1],
-};
+// Teinte d'anneau par type, dans la palette courante : teinte principale
+// pour les extrêmes, troisième pour la hausse, deuxième pour la baisse.
+function teintesAnnotation() {
+  const p = paletteActive();
+  return { max: p[0], min: p[0], hausse: p[2], baisse: p[1] };
+}
 
 // Plugin maison (aucune dépendance) : repère les points remarquables de
 // la courbe. Un anneau cerne le point ; le libellé n'apparaît qu'au-delà
@@ -645,7 +818,7 @@ const annotationsCourbe = {
       ctx.beginPath();
       ctx.arc(point.x, point.y, 6, 0, Math.PI * 2);
       ctx.lineWidth = 2;
-      ctx.strokeStyle = TEINTES_ANNOTATION[ann.type] || PALETTE[0];
+      ctx.strokeStyle = teintesAnnotation()[ann.type] || paletteActive()[0];
       ctx.stroke();
       ctx.restore();
       if (etroit) continue; // mobile : le repère suffit
@@ -731,12 +904,18 @@ function majTendance(t) {
 function majClassement(c) {
   if (!c) return;
 
+  // Tige et pastille portent la même valeur : la pastille est un nuage de
+  // points posé sur { valeur, index de catégorie }.
+  const enPuces = (valeurs) => valeurs.map((v, i) => ({ x: v, y: i }));
+
   charts.top.data.labels = c.top_labels;
   charts.top.data.datasets[0].data = c.top_valeurs;
+  charts.top.data.datasets[1].data = enPuces(c.top_valeurs);
   charts.top.update();
 
   charts.flop.data.labels = c.flop_labels;
   charts.flop.data.datasets[0].data = c.flop_valeurs;
+  charts.flop.data.datasets[1].data = enPuces(c.flop_valeurs);
   charts.flop.update();
 
   const message = {
@@ -1027,6 +1206,22 @@ document.addEventListener("DOMContentLoaded", () => {
   const btnComparer = document.getElementById("btn-comparer");
   if (btnComparer) btnComparer.addEventListener("click", comparer);
 
+  // Bascule de palette des graphiques : Okabe-Ito (défaut) ou variante
+  // « marque » teal — choix mémorisé, repeint sans nouvelle requête.
+  const btnPalette = document.getElementById("btn-palette");
+  if (btnPalette) {
+    majLibellePalette();
+    btnPalette.addEventListener("click", () => {
+      try {
+        window.localStorage.setItem(
+          "datavision-palette", enModeMarque() ? "okabe" : "marque");
+      } catch (e) { /* stockage indisponible : la palette reste par défaut */ }
+      majLibellePalette();
+      creerGraphiques();
+      if (derniereReponse) appliquer(derniereReponse);
+    });
+  }
+
   // Export PNG des graphiques (délégation : un seul écouteur pour les cinq).
   document.addEventListener("click", (evenement) => {
     const bouton = evenement.target.closest("[data-png]");
@@ -1055,7 +1250,7 @@ const api = {
   creerGraphiques, couleur, aire,
   graphiqueDe, nomFichierPNG, exporterPNG,
   infosExport, hauteurEntetePNG, texteCoupe, dessinerEntetePNG,
-  charts, PALETTE, PALETTE_TOP,
+  charts, PALETTE, PALETTE_TOP, PALETTE_MARQUE, paletteActive,
   calculerAnnotations, annotationsCourbe,
   // Rendu
   majKpis, majResume, majTableau, majPagination, majTendance, majProjection,

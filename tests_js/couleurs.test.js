@@ -54,12 +54,14 @@ test("palette : chaque graphique emploie la teinte prévue", () => {
   const categories = api.charts.categories.data.datasets[0];
   assert.equal(categories.backgroundColor, api.PALETTE[0]);
   assert.equal(categories.hoverBackgroundColor, "#005A8F");
-  // Flop : vermillon — la seule série « rouge ».
-  const flop = api.charts.flop.data.datasets[0];
-  assert.equal(flop.backgroundColor, "#D55E00");
-  assert.equal(flop.hoverBackgroundColor, "#9C4400");
-  // Top : la palette privée du vermillon.
-  assert.deepEqual(api.charts.top.data.datasets[0].backgroundColor, api.PALETTE_TOP);
+  // Flop : vermillon — la seule série « rouge », portée par la pastille ;
+  // la tige, elle, reste grise (barres à puces).
+  const flop = api.charts.flop.data.datasets;
+  assert.equal(flop[0].backgroundColor, "#e3e6ea");
+  assert.equal(flop[1].pointBackgroundColor, "#D55E00");
+  assert.equal(flop[1].pointHoverBackgroundColor, "#9C4400");
+  // Top : la palette privée du vermillon, portée par les pastilles.
+  assert.deepEqual(api.charts.top.data.datasets[1].pointBackgroundColor, api.PALETTE_TOP);
   // Répartition : la palette entière, six parts pour six couleurs.
   assert.deepEqual(api.charts.repartition.data.datasets[0].backgroundColor, api.PALETTE);
 });
