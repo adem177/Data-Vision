@@ -1,31 +1,94 @@
+# ============================================================
+# DataVision — fichiers ignorés par Git
+# Règle : le dépôt ne contient que du code source, jamais de
+# secrets, de base de données, de dépendances ni de fichiers
+# utilisateur générés.
+# ============================================================
+
+# ------------------------------------------------------------
 # Python
+# ------------------------------------------------------------
 __pycache__/
 *.py[cod]
+*.pyo
 *.egg-info/
+*.egg
+build/
+dist/
+sdist/
+.eggs/
 
 # Environnement virtuel
 venv/
 env/
-.env
+.venv/
+ENV/
 
+# ------------------------------------------------------------
+# Secrets & variables d'environnement
+# ------------------------------------------------------------
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# ------------------------------------------------------------
 # Django
+# ------------------------------------------------------------
 db.sqlite3
+*.sqlite3
 staticfiles/
 media/
+log/*.log
 
-# Données uploadées
+# ------------------------------------------------------------
+# Données (générées ou déposées par l'utilisateur)
+# ------------------------------------------------------------
+data/*.csv
+!data/sample_sales.csv
 static/uploads/
 
-# Tests / outils
+# ------------------------------------------------------------
+# Tests & couverture de code
+# ------------------------------------------------------------
 .pytest_cache/
 .coverage
+.coverage.*
+coverage.xml
 htmlcov/
+junit*.xml
 
-# JavaScript (tests front uniquement : aucun code produit)
+# ------------------------------------------------------------
+# JavaScript (uniquement les dépendances de test front)
+# ------------------------------------------------------------
 node_modules/
 npm-debug.log*
+yarn-error.log*
 package-lock.json.bak
 
-# Éditeurs
+# ------------------------------------------------------------
+# Outils & cache de compilation
+# ------------------------------------------------------------
+.mypy_cache/
+.ruff_cache/
+.pytype/
+.ipynb_checkpoints/
+.tox/
+.cache/
+
+# ------------------------------------------------------------
+# Éditeurs & IDE
+# ------------------------------------------------------------
 .vscode/
 .idea/
+*.swp
+*.swo
+*~
+
+# ------------------------------------------------------------
+# Système
+# ------------------------------------------------------------
+.DS_Store
+Thumbs.db
+desktop.ini

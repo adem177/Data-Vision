@@ -2,11 +2,27 @@
 
 > Plateforme intelligente d'analyse et de visualisation de données — transforme un fichier CSV/Excel brut en dashboard interactif en quelques secondes.
 
-![Python](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white)
-![Django](https://img.shields.io/badge/Django-5.x-092E20?logo=django&logoColor=white)
-![Pandas](https://img.shields.io/badge/Pandas-2.x-150458?logo=pandas&logoColor=white)
+[![CI](https://github.com/adem177/Data-Vision/actions/workflows/ci.yml/badge.svg)](https://github.com/adem177/Data-Vision/actions/workflows/ci.yml)
+![Python](https://img.shields.io/badge/Python-3.12+-3776AB?logo=python&logoColor=white)
+![Django](https://img.shields.io/badge/Django-6.x-092E20?logo=django&logoColor=white)
+![Pandas](https://img.shields.io/badge/Pandas-3.x-150458?logo=pandas&logoColor=white)
 ![Chart.js](https://img.shields.io/badge/Chart.js-4.x-F68B1F?logo=chart.js&logoColor=white)
+![Tests](https://img.shields.io/badge/tests-312%20Python%20%2B%20123%20JS-brightgreen)
 ![Licence](https://img.shields.io/badge/Licence-MIT-green)
+
+## 📚 Sommaire
+
+- [Le problème résolu](#-le-problème-résolu)
+- [Démarrage rapide](#-démarrage-rapide)
+- [Stack technique](#%EF%B8%8F-stack-technique)
+- [Structure du projet](#-structure-du-projet)
+- [Fonctionnalités](#-fonctionnalités)
+- [Tests](#-tests)
+- [Preuve de concept Angular](#%EF%B8%8F-preuve-de-concept-angular)
+- [Déploiement en ligne (Render)](#-déploiement-en-ligne-render)
+- [CI (GitHub Actions)](#-ci-github-actions)
+- [Conception](#-conception)
+- [Licence](#-licence)
 
 ## 🎯 Le problème résolu
 
@@ -24,8 +40,8 @@ Une entreprise possède un fichier Excel de 5 000 ventes (date, produit, catégo
 ## 🚀 Démarrage rapide
 
 ```bash
-git clone https://github.com/TON_PSEUDO/DataVision.git
-cd DataVision
+git clone https://github.com/adem177/Data-Vision.git
+cd Data-Vision
 python -m venv venv
 venv\Scripts\activate        # macOS/Linux : source venv/bin/activate
 pip install -r requirements.txt
@@ -33,6 +49,8 @@ python data_generator.py     # génère data/sample_sales.csv (5 000 ventes)
 python manage.py migrate     # crée la base SQLite + table des analyses
 python manage.py runserver   # http://127.0.0.1:8000
 ```
+
+> **Prérequis** : Python 3.12+ (Django 6 l'exige) et Node 22 uniquement pour les tests front.
 
 Ensuite : **crée un compte**, puis clique sur **« Essayer la démo »** ou importe ton propre fichier `.csv` / `.xlsx`. Tes analyses sont sauvegardées et retrouvables dans **« Mes analyses »**.
 
@@ -96,8 +114,8 @@ DataVision/
 ├── static/                   # CSS + JS + build Angular (static/angular/)
 ├── data/sample_sales.csv     # Données de démo (générées)
 ├── media/uploads/            # Fichiers uploadés (gitignoré)
-├── tests/                    # 311 tests Python (pytest)
-├── tests_js/                 # 112 tests JavaScript (node:test + jsdom)
+├── tests/                    # 312 tests Python (pytest)
+├── tests_js/                 # 123 tests JavaScript (node:test + jsdom)
 ├── package.json              # Uniquement les dépendances de test front
 ├── requirements.txt
 └── README.md
@@ -237,15 +255,15 @@ Pandas déjà présent).
 ## 🧪 Tests
 
 ```bash
-# Moteur Python (Django + Pandas) — 311 tests, ~4 min
+# Moteur Python (Django + Pandas) — 312 tests, ~4 min
 pytest tests/ -v
 
-# Front-end (JavaScript) — 112 tests, ~2 s
+# Front-end (JavaScript) — 123 tests, ~3 s
 npm ci       # une seule fois
 npm test
 ```
 
-### Moteur Python — 311 tests
+### Moteur Python — 312 tests
 
 - le moteur d'analyse : nettoyage, détection des colonnes, KPIs, filtres, exports, pagination de l'aperçu
 - le parcours utilisateur : inscription, protection des pages, isolation entre comptes, recherche et tri des analyses
@@ -283,7 +301,7 @@ npm test
   longueurs bornées, texte échappé, note et source présentes dans le PDF
   (flux reportlab décodés ASCII85 + Flate pour aller chercher le texte)
 
-### Front-end — 112 tests
+### Front-end — 123 tests
 
 Aucun framework : le **moteur de tests intégré à Node** (`node:test`) suffit,
 et `jsdom` fournit le DOM. Le code testé est celui servi au navigateur, sans
@@ -299,7 +317,9 @@ tests_js/
 ├── rendu.test.js       # ce que chaque fonction écrit réellement dans le DOM
 ├── annotations.test.js # annotations de courbe : calcul pur + plugin dessiné
 ├── dispersion.test.js  # nuage de points : carte, droite, légende, états vides
-└── couleurs.test.js    # palette Okabe-Ito verrouillée, teintes par graphique
+├── couleurs.test.js    # palette Okabe-Ito verrouillée, teintes par graphique
+├── palette.test.js     # bascule de palette (clair/sombre) sans nouvelle requête
+└── modale.test.js      # modale de confirmation : focus, échap, pièges clavier
 ```
 
 Points saillants :
@@ -384,20 +404,28 @@ Toutes les valeurs par défaut conviennent au développement ; en production, se
 | `DATAVISION_LOG_LEVEL` | Niveau de journalisation (`DEBUG`, `INFO`, `WARNING`, `ERROR`) | `INFO` |
 | `DATAVISION_DEMO_LOGIN` | Afficher les identifiants démo sur la page de connexion (`False` sur Render) | `True` |
 | `DATAVISION_DEMO_USER` / `DATAVISION_DEMO_PASSWORD` | Identifiants du compte démo | `demo` / `DataVision2026` |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Connexion Google (allauth) — bouton masqué si absentes | vide |
+
+### Connexion Google (optionnelle)
+
+L'inscription et la connexion par mot de passe fonctionnent sans rien configurer.
+Pour ajouter **« Continuer avec Google »** :
+
+1. Sur la [console Google Cloud](https://console.cloud.google.com/apis/credentials), crée un projet puis un **identifiant OAuth 2.0** de type *Application Web*
+2. Ajoute ton domaine d'origine (`http://127.0.0.1:8000` en dev, l'URL Render en prod) dans les **origines JavaScript autorisées**, et le même dans les **URI de redirection autorisées** suivi de `/accounts/google/login/callback/`
+3. Copie les deux valeurs dans `.env` (voir `.env.example`)
+
+Tant que `GOOGLE_CLIENT_ID` et `GOOGLE_CLIENT_SECRET` sont absentes, le bouton
+Google n'est tout simplement pas affiché — le reste du site fonctionne à l'identique.
 
 ## 🌐 CI (GitHub Actions)
 
-`.github/workflows/ci.yml` lance deux jobs à chaque push : **311 tests Python**
-(Python 3.11 et 3.12) et **112 tests JavaScript** (Node 22). Chaque job Python
+`.github/workflows/ci.yml` lance deux jobs à chaque push : **312 tests Python**
+(Python 3.12 et 3.13) et **123 tests JavaScript** (Node 22). Chaque job Python
 exécute aussi `manage.py check`, puis `manage.py check --deploy` **avec un
 `DEBUG` éteint** : c'est la configuration réelle de Render, et c'est elle qui
 attrape les erreurs invisibles en développement (HTTPS, HSTS, clé secrète,
-e-mails). Ajoute le badge en
-haut du README :
-
-```markdown
-![CI](https://github.com/TON_PSEUDO/DataVision/actions/workflows/ci.yml/badge.svg)
-```
+e-mails). Le badge en haut du README reflète l'état de cette workflow.
 
 ## 🧹 Conception
 
