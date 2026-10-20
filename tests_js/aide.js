@@ -83,7 +83,7 @@ const GABARIT = `<!DOCTYPE html>
          à l'intérieur d'une zone qui reçoit le message d'état vide. -->
     <section class="grille-graphiques">
       <div class="carte graphique large">
-        <h3>Évolution <span id="legende-projection" hidden></span>
+        <h3>Évolution <span class="legende-projection" id="legende-projection" hidden></span>
           <button type="button" class="btn-png" data-png="chart-evolution"
                   title="Télécharger ce graphique en PNG"><i class="bi bi-download"></i></button>
         </h3>
@@ -148,6 +148,23 @@ const GABARIT = `<!DOCTYPE html>
       <div id="comparaison-avertissement" hidden></div>
     </div>
     <button id="btn-comparer" type="button">Comparer</button>
+
+    <!-- Vue détaillée : même structure que dashboard.html. -->
+    <div class="modale-fond" id="modale-graphique" hidden>
+      <div class="modale" role="dialog" aria-modal="true" aria-labelledby="modale-titre">
+        <div class="modale-entete">
+          <div>
+            <h2 id="modale-titre">Graphique</h2>
+            <p class="modale-chapo">Click a bar, point or data item to inspect the selected value.</p>
+          </div>
+          <button type="button" class="modale-fermer" id="modale-fermer">Close</button>
+        </div>
+        <p class="modale-info" id="modale-info">
+          Interactive detail view for <strong id="modale-info-titre"></strong>.
+        </p>
+        <div class="modale-zone" id="modale-zone"><canvas id="canvas-modale"></canvas></div>
+      </div>
+    </div>
   </div>
 </body>
 </html>`;

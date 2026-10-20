@@ -356,7 +356,12 @@ if not DEBUG:
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
+    # Un an de contrainte HTTPS, sous-domaines compris et éligible au
+    # préchargement HSTS : après la première visite en HTTPS, le navigateur
+    # n'accepte plus jamais de requête en clair sur le domaine.
     SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
 
     # En prod, la clé secrète doit venir de l'environnement.
     if SECRET_KEY.startswith("django-insecure-"):

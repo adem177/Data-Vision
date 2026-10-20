@@ -50,21 +50,44 @@
 
 {% block entete %}
 <header class="topbar" role="banner">
-  <a class="marque" href="{% url 'core:projets' %}"><i class="bi bi-bar-chart-fill" aria-hidden="true"></i> DataVision</a>
+  <!-- Logo : pastille de marque + nom. -->
+  <a class="marque" href="{% url 'core:index' %}">
+    <span class="marque-logo" aria-hidden="true"><i class="bi bi-bar-chart-fill"></i></span>
+    <span class="marque-nom">DataVision</span>
+  </a>
+
+  <!-- Navigation principale : la page courante est marquée par .actif. -->
+  {% with page=request.resolver_match.url_name %}
+  <nav class="nav-principale" aria-label="Navigation principale">
+    <a class="nav-lien{% if page == 'index' %} actif{% endif %}"
+       href="{% url 'core:index' %}#apropos">About</a>
+    <a class="nav-lien" href="{% url 'core:index' %}#fonctionnalites">Features</a>
+    <a class="nav-lien{% if page == 'projets' or page == 'dashboard' %} actif{% endif %}"
+       href="{% url 'core:projets' %}">Projects</a>
+    <a class="nav-lien" href="{% url 'core:index' %}">Contact</a>
+  </nav>
+  {% endwith %}
+
   <div class="actions">
-    <button type="button" id="btn-theme" class="btn btn-fantome" aria-pressed="false"
-            aria-label="Activer le mode sombre"><i class="bi bi-moon-stars" aria-hidden="true"></i></button>
     {% if user.is_authenticated %}
-      <a class="btn btn-fantome" href="{% url 'core:projets' %}"><i class="bi bi-folder2-open" aria-hidden="true"></i> Mes analyses</a>
-      <span class="fichier"><i class="bi bi-person" aria-hidden="true"></i> {{ user.username }}</span>
-      <form method="post" action="{% url 'core:deconnexion' %}" class="formulaire-inline">
-        {% csrf_token %}
-        <button type="submit" class="btn btn-fantome">Déconnexion</button>
-      </form>
+      <div class="accueil-pill">
+        <span class="accueil-pill-nom" title="{{ user.username }}">Welcome, {{ user.username }}</span>
+        <form method="post" action="{% url 'core:deconnexion' %}" class="formulaire-inline">
+          {% csrf_token %}
+          <button type="submit" class="btn-logout">Logout</button>
+        </form>
+      </div>
     {% else %}
       <a class="btn btn-fantome" href="{% url 'core:connexion' %}">Connexion</a>
       <a class="btn" href="{% url 'core:inscription' %}">Créer un compte</a>
     {% endif %}
+
+    <button type="button" id="btn-theme" class="btn-theme" aria-pressed="false"
+            aria-label="Activer le mode sombre"><i class="bi bi-moon-stars" aria-hidden="true"></i></button>
+
+    <span class="badge-moteur" role="status">
+      <span class="badge-moteur-point" aria-hidden="true"></span> Analytics Engine Ready
+    </span>
   </div>
 </header>
 {% endblock %}

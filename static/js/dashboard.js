@@ -239,12 +239,17 @@ function commun(plugins, scales) {
     maintainAspectRatio: false,
     interaction: { mode: "index", intersect: false },
     animation: animations(),
+    // Clic dans la zone de tracé : la vue détaillée s'ouvre (voir plus bas).
+    onClick: clicModale,
     plugins,
     scales,
   };
 }
 
 function creerGraphiques() {
+  // Une vue détaillée ouverte porte sur des graphiques qui vont disparaître :
+  // on la referme avant de reconstruire (changement de thème ou de palette).
+  fermerModale();
   // Permet de reconstruire les graphiques (changement de thème) sans doublon.
   Object.values(charts).forEach((c) => c && c.destroy());
   Object.keys(charts).forEach((k) => delete charts[k]);
@@ -349,6 +354,7 @@ function creerGraphiques() {
       maintainAspectRatio: false,
       animation: animations(),
       cutout: "68%",
+      onClick: clicModale,
       plugins: {
         legend: {
           position: "right",
@@ -692,6 +698,173 @@ function exporterPNG(idCanvas, nomFichier) {
   lien.click();
   lien.remove();
   return true;
+}
+
+// ---------- Vue détaillée d'un graphique (modale) ----------
+//
+// Un clic dans la zone de tracé ouvre la version en grand : mêmes données,
+// mêmes couleurs, plus d'espace pour lire et pour infobuler. La fenêtre vit
+// dans le gabarit (dashboard.html) ; le code ne fait que la remplir et la
+// refermer. Sans gabarit (tests), tout ceci est simplement sans effet.
+
+const CANVAS_MODALE = "canvas-modale";
+
+// Info-bulle par graphique : la vue détaillée formate comme l'original.
+const formatModale = {
+  "chart-evolution": (c) => " " + formatDT(c.parsed.y),
+  "chart-categories": (c) => " " + formatDT(c.parsed.y),
+  "chart-repartition": (c) => " " + c.label + " : " + formatDT(c.parsed),
+  "chart-top": (c) => " " + formatDT(c.parsed.x),
+  "chart-flop": (c) => " " + formatDT(c.parsed.x),
+  "chart-nuage": (c) => ` ${formatNombre(c.parsed.x)} × ${formatNombre(c.parsed.y)}`,
+};
+
+// Titre repris de la carte d'origine : le clone perd le bouton d'export, le
+// badge et la légende de projection, qui ne sont pas le sujet du titre.
+function titreGraphique(idCanvas) {
+  const chart = graphiqueDe(idCanvas);
+  const carte = chart && chart.canvas.closest ? chart.canvas.closest(".carte") : null;
+  const titre = carte ? carte.querySelector("h3") : null;
+  if (!titre) return "Graphique";
+  const clone = titre.cloneNode(true);
+  clone.querySelectorAll("button, .badge, .legende-projection").forEach((n) => n.remove());
+  return clone.textContent.replace(/\s+/g, " ").trim();
+}
+
+// Copie des valeurs d'un graphique : la vue détaillée est peinte sans que la
+// source bouge, ni l'inverse. Dégradés et couleurs scriptables (fonctions)
+// sont partagés tels quels — seules les données sont dupliquées.
+function clonerValeurs(v) {
+  if (Array.isArray(v)) return v.map(clonerValeurs);
+  if (v && typeof v === "object") {
+    if (typeof v.addColorStop === "function") return v; // dégradé Canvas
+    const copie = {};
+    Object.keys(v).forEach((cle) => { copie[cle] = clonerValeurs(v[cle]); });
+    return copie;
+  }
+  return v;
+}
+
+function clonerDonnees(d) {
+  if (!d) return { labels: [], datasets: [] };
+  return {
+    labels: Array.isArray(d.labels) ? [...d.labels] : [],
+    datasets: (d.datasets || []).map((jeu) => ({ ...jeu, data: clonerValeurs(jeu.data) })),
+  };
+}
+
+// Options de la vue détaillée : la mise en page d'origine (barres
+// horizontales, anneau, légende) est reconstruite à la taille de la fenêtre.
+function optionsModale(idCanvas, source) {
+  const infobulleModale = infobulle(formatModale[idCanvas] || ((c) => " " + formatNombre(c.parsed.y)));
+
+  if (source.config.type === "doughnut") {
+    return {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: animations(),
+      cutout: "68%",
+      onClick: clicModale,
+      plugins: {
+        legend: {
+          position: "right",
+          labels: {
+            usePointStyle: true,
+            pointStyle: "circle",
+            boxWidth: 9,
+            boxHeight: 9,
+            padding: 14,
+            color: couleur("--texte-doux", "#64748b"),
+            font: { size: 12 },
+          },
+        },
+        tooltip: infobulleModale,
+      },
+    };
+  }
+
+  const horizontal = !!(source.config.options && source.config.options.indexAxis === "y");
+  const options = commun(
+    {
+      legend: {
+        // Seules les séries multiples portent une légende, comme sur la carte.
+        display: source.config.type === "line" || source.config.type === "scatter",
+        position: "bottom",
+        labels: legendeCliquable(),
+      },
+      tooltip: infobulleModale,
+      voileBarres: horizontal ? { actif: true, axe: "x", garde: 9 } : { actif: true, axe: "y" },
+    },
+    horizontal ? axesBarreH() : { x: axeX(), y: axeY() }
+  );
+  if (horizontal) options.indexAxis = "y";
+  return options;
+}
+
+// Ouvre la vue détaillée d'un graphique du tableau de bord.
+// Renvoie false quand rien n'est ouvrable (gabarit absent ou id inconnu).
+function ouvrirModale(idCanvas) {
+  const source = graphiqueDe(idCanvas);
+  const boite = document.getElementById("modale-graphique");
+  const canvas = document.getElementById(CANVAS_MODALE);
+  if (!source || !boite || !canvas) return false;
+
+  const titre = titreGraphique(idCanvas);
+  const elTitre = document.getElementById("modale-titre");
+  if (elTitre) elTitre.textContent = titre;
+  const elInfo = document.getElementById("modale-info-titre");
+  if (elInfo) elInfo.textContent = titre;
+
+  // Une seule vue à la fois : un éventuel graphique déjà ouvert est libéré.
+  fermerModale();
+
+  // L'aire dégradée de la courbe était calculée pour la hauteur de sa carte :
+  // on la retisse pour la hauteur de la fenêtre.
+  const donnees = clonerDonnees(source.data);
+  donnees.datasets.forEach((jeu) => {
+    if (jeu.fill && jeu.borderColor) jeu.backgroundColor = aire(canvas, jeu.borderColor);
+  });
+
+  charts.modale = new Chart(canvas, {
+    type: source.config.type,
+    data: donnees,
+    plugins: Array.isArray(source.config.plugins) ? [...source.config.plugins] : undefined,
+    options: optionsModale(idCanvas, source),
+  });
+  // Les annotations de la courbe (max, min, variations) suivent l'ouverture.
+  if (source.$annotations) charts.modale.$annotations = source.$annotations;
+
+  boite.hidden = false;
+  document.body.classList.add("modale-ouverte");
+  const fermeture = document.getElementById("modale-fermer");
+  if (fermeture && typeof fermeture.focus === "function") fermeture.focus();
+  return true;
+}
+
+// Referme la vue détaillée et libère son graphique.
+function fermerModale() {
+  if (charts.modale) {
+    charts.modale.destroy();
+    delete charts.modale;
+  }
+  const boite = document.getElementById("modale-graphique");
+  if (!boite) return false;
+  boite.hidden = true;
+  document.body.classList.remove("modale-ouverte");
+  return true;
+}
+
+// Clic relevé par Chart.js : il n'ouvre la vue détaillée que depuis la zone
+// de tracé. La légende est dessinée en dehors — elle garde son rôle (masquer
+// ou réafficher une série) sans ouvrir de fenêtre.
+function clicModale(evenement, elements, chart) {
+  const id = chart && chart.canvas ? chart.canvas.id : "";
+  if (!id || id === CANVAS_MODALE) return;
+  const zone = chart.chartArea;
+  if (!zone || !evenement || typeof evenement.x !== "number" || typeof evenement.y !== "number") return;
+  const dedans = evenement.x >= zone.left && evenement.x <= zone.right
+    && evenement.y >= zone.top && evenement.y <= zone.bottom;
+  if (dedans) ouvrirModale(id);
 }
 
 // ---------- Phase E : tendance, Flop et corrélations ----------
@@ -1229,6 +1402,21 @@ document.addEventListener("DOMContentLoaded", () => {
     exporterPNG(bouton.dataset.png);
   });
 
+  // Vue détaillée : fermeture par le bouton, par le fond flouté ou par Échap.
+  const btnFermer = document.getElementById("modale-fermer");
+  if (btnFermer) btnFermer.addEventListener("click", fermerModale);
+
+  const fondModale = document.getElementById("modale-graphique");
+  if (fondModale) {
+    fondModale.addEventListener("click", (evenement) => {
+      if (evenement.target === fondModale) fermerModale();
+    });
+  }
+
+  document.addEventListener("keydown", (evenement) => {
+    if (evenement.key === "Escape") fermerModale();
+  });
+
   // Le bouton de thème émet cet événement : on repeint les graphiques avec
   // les couleurs du nouveau thème (sans re-charger les données).
   document.addEventListener("datavision:theme", () => {
@@ -1250,6 +1438,9 @@ const api = {
   creerGraphiques, couleur, aire,
   graphiqueDe, nomFichierPNG, exporterPNG,
   infosExport, hauteurEntetePNG, texteCoupe, dessinerEntetePNG,
+  // Vue détaillée
+  ouvrirModale, fermerModale, clicModale, optionsModale,
+  titreGraphique, clonerDonnees, CANVAS_MODALE,
   charts, PALETTE, PALETTE_TOP, PALETTE_MARQUE, paletteActive,
   calculerAnnotations, annotationsCourbe,
   // Rendu
