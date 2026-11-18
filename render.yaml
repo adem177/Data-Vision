@@ -26,7 +26,8 @@ services:
       - key: DJANGO_SECRET_KEY
         generateValue: true          # Render génère une clé secrète aléatoire
       - key: DJANGO_ALLOWED_HOSTS
-        sync: false                  # à renseigner avec ton domaine après création
+        # Nom prévisible : <nom du service>.onrender.com (voir `name:` ci-dessus).
+        value: "datavision.onrender.com"
       - key: PYTHON_VERSION
         value: "3.12.0"
       - key: DATABASE_URL

@@ -14,4 +14,7 @@ reportlab==5.0.1
 dj-database-url==3.1.2
 django-redis==7.0.0
 gunicorn==26.2.0
+# Sert les fichiers statiques (CSS/JS/Angular) depuis le processus Django :
+# Render ne sert pas `static/` tout seul, sans WhiteNoise la page serait nue.
+whitenoise==6.12.0
 pytest==9.1.1

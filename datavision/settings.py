@@ -62,6 +62,9 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    # Après SecurityMiddleware (recommandation WhiteNoise) : compresse les
+    # fichiers statiques et les sert depuis STATIC_ROOT (voir STORAGES).
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -120,6 +123,18 @@ USE_TZ = True
 STATIC_URL = "static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 STATIC_ROOT = BASE_DIR / "staticfiles"
+
+# WhiteNoise sert STATIC_ROOT en production (Render ne le fait pas à notre
+# place). « Compressed » sans « Manifest » : la compression est conservée,
+# mais collectstatic ne casse pas si un fichier référencé disparaît.
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
+    },
+}
 
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
@@ -353,6 +368,10 @@ SESSION_COOKIE_AGE = 60 * 60 * 24 * 14  # 14 jours
 
 # En production (DEBUG = False), on exige le HTTPS.
 if not DEBUG:
+    # Render termine le TLS puis nous parle en HTTP : sans cet indice, Django
+    # croirait que la requête est en clair et renverrait une boucle de
+    # redirection infinie vers https:// (SECURE_SSL_REDIRECT ci-dessous).
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
