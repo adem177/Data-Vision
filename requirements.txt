@@ -12,6 +12,9 @@ numpy==2.4.6
 openpyxl==3.1.5
 reportlab==5.0.1
 dj-database-url==3.1.2
+# Pilote PostgreSQL : requis par dj-database-url sur Render (sans lui,
+# `manage.py` plante avec « Error loading psycopg2 or psycopg module »).
+psycopg2-binary==2.9.13
 django-redis==7.0.0
 gunicorn==26.2.0
 # Sert les fichiers statiques (CSS/JS/Angular) depuis le processus Django :

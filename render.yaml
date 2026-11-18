@@ -26,8 +26,9 @@ services:
       - key: DJANGO_SECRET_KEY
         generateValue: true          # Render génère une clé secrète aléatoire
       - key: DJANGO_ALLOWED_HOSTS
-        # Nom prévisible : <nom du service>.onrender.com (voir `name:` ci-dessus).
-        value: "datavision.onrender.com"
+        # Sous-domaine attribué par Render au service `name:` ci-dessous
+        # (Render ajoute un suffixe aléatoire au nom du service).
+        value: "datavision-3z9q.onrender.com"
       - key: PYTHON_VERSION
         value: "3.12.0"
       - key: DATABASE_URL
